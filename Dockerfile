@@ -1,5 +1,5 @@
-FROM java:8
+FROM tomcat:latest
 
-COPY ./temp/spring-server-generated/target/swagger-spring-1.0.0.jar reso.jar
+COPY ./target/RESOservice-1.0.war /usr/local/tomcat/webapps/
 
-ENTRYPOINT ["java","-jar","reso.jar"]
+CMD ["catalina.sh", "run"]

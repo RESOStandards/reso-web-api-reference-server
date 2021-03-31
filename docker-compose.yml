@@ -4,10 +4,10 @@ services:
     restart: on-failure
     build: ./
     expose:
-      - "10222"
+      - "8080"
     ports:
-      - 10222:10222
+      - 8080:8080
     environment:
       - WAIT_HOSTS
-    depends_on:
-      - docker-mysql
+#    depends_on:
+#      - docker-mysql
