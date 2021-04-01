@@ -8,6 +8,10 @@ services:
     ports:
       - 8080:8080
     environment:
-      - WAIT_HOSTS
+      - SQL_HOST
+      - SQL_USER
+      - SQL_PASSWORD
+    volumes:
+      - ./target:/usr/local/tomcat/webapps
 #    depends_on:
 #      - docker-mysql

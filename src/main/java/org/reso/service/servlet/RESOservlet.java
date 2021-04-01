@@ -12,6 +12,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.*;
 import java.util.ArrayList;
+import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 
@@ -19,6 +20,27 @@ public class RESOservlet extends HttpServlet
 {
    private static final long   serialVersionUID = 1L;
    private static final Logger LOG              = LoggerFactory.getLogger(RESOservlet.class);
+
+
+   @Override public void init() throws ServletException
+   {
+      super.init();
+
+      Map<String, String> env = System.getenv();
+      for (String envName : env.keySet()) {
+         LOG.debug( String.format("ENV VAR: %s=%s%n",
+                           envName,
+                           env.get(envName))
+         );
+      }
+
+      try {
+         Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+      } catch (Exception e) {
+         LOG.error("Server Error occurred in connecting to the database", e);
+      }
+   }
+
 
    protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
       try {
@@ -32,7 +54,7 @@ public class RESOservlet extends HttpServlet
          handler.process(req, resp);
 
       } catch (RuntimeException e) {
-         LOG.error("Server Error occurred in ExampleServlet", e);
+         LOG.error("Server Error occurred in RESOservlet", e);
          throw new ServletException(e);
       }
    }

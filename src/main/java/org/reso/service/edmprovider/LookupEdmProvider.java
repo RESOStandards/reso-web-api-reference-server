@@ -102,6 +102,13 @@ public class LookupEdmProvider extends CsdlAbstractEdmProvider
       List<CsdlSchema> schemas = new ArrayList<CsdlSchema>();
       schemas.add(schema);
 
+      CsdlEnumType type = new CsdlEnumType();
+      type.setMembers(new ArrayList<CsdlEnumMember>());
+      type.setName("EnumTest");
+      type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
+
+      schema.getEnumTypes().add(type);
+
       return schemas;
    }
 

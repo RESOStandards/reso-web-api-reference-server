@@ -17,16 +17,33 @@ import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.reso.service.edmprovider.LookupEdmProvider;
+import org.reso.service.servlet.RESOservlet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.List;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Date;
+import java.util.Map;
+
 public class LookupEntityCollectionProcessor implements EntityCollectionProcessor
 {
    private OData           odata;
    private ServiceMetadata serviceMetadata;
+   private Connection connect = null;
+   private Statement statement = null;
+   private PreparedStatement preparedStatement = null;
+   private              ResultSet resultSet = null;
+   private static final Logger    LOG       = LoggerFactory.getLogger(LookupEntityCollectionProcessor.class);
 
    public void init(OData odata, ServiceMetadata serviceMetadata) {
       this.odata = odata;
@@ -71,30 +88,54 @@ public class LookupEntityCollectionProcessor implements EntityCollectionProcesso
       if(LookupEdmProvider.ES_LOOKUPS_NAME.equals(edmEntitySet.getName())) {
          List<Entity> productList = lookupsCollection.getEntities();
 
-         // add some sample product entities
-         final Entity e1 = new Entity()
-                  .addProperty(new Property(null, "LookupKey", ValueType.PRIMITIVE, "ABC123"))
-                  .addProperty(new Property(null, "LookupName", ValueType.PRIMITIVE, "CountyOrParish"))
-                  .addProperty(new Property(null, "LookupValue", ValueType.PRIMITIVE,
-                                            "Los Angeles County"));
-         e1.setId(createId("Lookups", 1));
-         productList.add(e1);
+         Map<String, String> properties = System.getenv();
 
-         final Entity e2 = new Entity()
-                  .addProperty(new Property(null, "LookupKey", ValueType.PRIMITIVE, "BCD124"))
-                  .addProperty(new Property(null, "LookupName", ValueType.PRIMITIVE, "CountyOrParish"))
-                  .addProperty(new Property(null, "LookupValue", ValueType.PRIMITIVE,
-                                            "Ventura County"));
-         e2.setId(createId("Lookups", 1));
-         productList.add(e2);
+         try {
 
-         final Entity e3 = new Entity()
-                  .addProperty(new Property(null, "LookupKey", ValueType.PRIMITIVE, "CDE125"))
-                  .addProperty(new Property(null, "LookupName", ValueType.PRIMITIVE, "CountyOrParish"))
-                  .addProperty(new Property(null, "LookupValue", ValueType.PRIMITIVE,
-                                            "Contra Costa County"));
-         e3.setId(createId("Lookups", 1));
-         productList.add(e3);
+            String mysqlHost = properties.get("SQL_HOST");
+            String mysqlUser = properties.get("SQL_USER");
+            String mysqlPwd = properties.get("SQL_PASSWORD");
+
+            LOG.info("looking to connect to jdbc:mysql://"+mysqlHost+"/reso_data_dictionary_1_7");
+            connect = DriverManager
+                     .getConnection("jdbc:mysql://"+mysqlHost+"/reso_data_dictionary_1_7?"
+                                    + "user="+mysqlUser+"&password="+mysqlPwd);
+
+            // Statements allow to issue SQL queries to the database
+            statement = connect.createStatement();
+            // Result set get the result of the SQL query
+            resultSet = statement.executeQuery("select * from lookup");
+
+            // add the lookups from the database.
+            while (resultSet.next())
+            {
+               String lookupKey = resultSet.getString("LookupKey");
+               Entity ent = new Entity()
+                        .addProperty(new Property(null, "LookupKey", ValueType.PRIMITIVE, lookupKey))
+                        .addProperty(new Property(null, "LookupName", ValueType.PRIMITIVE, resultSet.getString("LookupName")))
+                        .addProperty(new Property(null, "LookupValue", ValueType.PRIMITIVE,resultSet.getString("LookupValue")))
+                        .addProperty(new Property(null, "StandardLookupValue", ValueType.PRIMITIVE,resultSet.getString("StandardLookupValue")))
+                        .addProperty(new Property(null, "LegacyOdataValue", ValueType.PRIMITIVE,resultSet.getString("LegacyOdataValue")))
+                        .addProperty(new Property(null, "ModificationTimestamp", ValueType.PRIMITIVE,resultSet.getDate("ModificationTimestamp")));
+
+               ent.setId(createId("Lookups", lookupKey));
+               productList.add(ent);
+            }
+
+            statement.close();
+
+         } catch (Exception e) {
+            LOG.error("Server Error occurred in reading Lookups", e);
+            return lookupsCollection;
+         } finally {
+            try
+            {
+               connect.close();
+            } catch (Exception e) {
+               LOG.error("Server Error closing connection", e);
+            }
+            return lookupsCollection;
+         }
       }
 
       return lookupsCollection;
