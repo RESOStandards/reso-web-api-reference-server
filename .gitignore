@@ -18,6 +18,7 @@ hs_err_pid*
 /lib
 /sql
 /web
+/build
 
 # Project Genereated files
 .pmd
