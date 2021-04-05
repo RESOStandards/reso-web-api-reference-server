@@ -32,7 +32,9 @@ public class LookupDefinition extends ResourceInfo
       }
 
       ArrayList<FieldInfo> list = new ArrayList<FieldInfo>();
-      list.add(new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
+      FieldInfo fieldInfo = new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo.addAnnotation("Lookup Key Field", "RESO.OData.Metadata.StandardName");
+      list.add(fieldInfo);
       list.add(new FieldInfo("LookupName", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
       list.add(new FieldInfo("LookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
       list.add(new FieldInfo("StandardLookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName()));

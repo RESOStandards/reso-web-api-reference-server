@@ -55,6 +55,18 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
             String fieldName = field.getFieldName();
 
             CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType());
+            Integer maxLength = field.getMaxLength();
+            if (null!=maxLength)
+            {
+               property.setMaxLength(maxLength);
+            }
+
+            ArrayList<CsdlAnnotation> annotations = field.getAnnotations();
+            if (annotations!=null)
+            {
+               property.setAnnotations(annotations);
+            }
+
             propertyList.add(property);
          }
 
@@ -133,6 +145,11 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
    public void addDefinition(ResourceInfo defn)
    {
       resourceList.add(defn);
+   }
+
+   public CsdlTerm getTerm(final FullQualifiedName termName)
+   {
+      return new CsdlTerm().setName(termName.getName());
    }
 
    public List<CsdlSchema> getSchemas() {
