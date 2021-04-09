@@ -32,16 +32,27 @@ public class LookupDefinition extends ResourceInfo
       }
 
       ArrayList<FieldInfo> list = new ArrayList<FieldInfo>();
-      FieldInfo fieldInfo = new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      LookupDefinition.fieldList = list;
+      FieldInfo fieldInfo = null;
+
+      fieldInfo = new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
       fieldInfo.addAnnotation("Lookup Key Field", "RESO.OData.Metadata.StandardName");
       list.add(fieldInfo);
-      list.add(new FieldInfo("LookupName", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
-      list.add(new FieldInfo("LookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
-      list.add(new FieldInfo("StandardLookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
-      list.add(new FieldInfo("LegacyOdataValue", EdmPrimitiveTypeKind.String.getFullQualifiedName()));
-      list.add(new FieldInfo("ModificationTimestamp", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()));
 
-      LookupDefinition.fieldList = list;
+      fieldInfo = new FieldInfo("LookupName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      list.add( fieldInfo);
+
+      fieldInfo = new FieldInfo("LookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      list.add(fieldInfo);
+
+      fieldInfo = new FieldInfo("StandardLookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      list.add(fieldInfo);
+
+      fieldInfo = new FieldInfo("LegacyOdataValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      list.add(fieldInfo);
+
+      fieldInfo = new FieldInfo("ModificationTimestamp", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
+      list.add(fieldInfo);
 
       return LookupDefinition.fieldList;
    }
