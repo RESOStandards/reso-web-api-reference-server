@@ -9,6 +9,8 @@ import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.definition.LookupDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
+import org.reso.service.security.BasicAuthProvider;
+import org.reso.service.security.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -24,7 +26,8 @@ public class RESOservlet extends HttpServlet
 {
    private static final long   serialVersionUID = 1L;
    private static final Logger     LOG     = LoggerFactory.getLogger(RESOservlet.class);
-   private              Connection connect = null;
+   private Connection connect = null;
+   private Validator  validator = null;
 
 
    @Override public void init() throws ServletException
@@ -38,6 +41,9 @@ public class RESOservlet extends HttpServlet
                            env.get(envName))
          );
       }
+
+      this.validator = new Validator();
+      this.validator.addProvider(new BasicAuthProvider());
 
       String mysqlHost = env.get("SQL_HOST");
       String mysqlUser = env.get("SQL_USER");
@@ -60,6 +66,12 @@ public class RESOservlet extends HttpServlet
 
 
    protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+      if (!this.validator.verify(req) && this.validator.unauthorizedResponse(resp))
+      {  // Due to order of operations, the unauthorized response won't be called unless the verification fails.
+         resp.getWriter().println("<html><body><p>Unauthorized</p></body></html>");
+         return;
+      }
+
       try {
          // create odata handler and configure it with CsdlEdmProvider and Processor
          OData odata = OData.newInstance();
