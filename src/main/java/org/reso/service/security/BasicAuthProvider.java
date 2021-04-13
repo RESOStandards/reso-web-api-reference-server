@@ -64,6 +64,6 @@ public class BasicAuthProvider implements Provider
    @Override public void unauthorizedResponse(HttpServletResponse resp)
    {
       resp.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
-      resp.setHeader("WWW-Authenticate","Basic");
+      resp.setHeader("WWW-Authenticate",BasicAuthProvider.BASIC_STR);
    }
 }

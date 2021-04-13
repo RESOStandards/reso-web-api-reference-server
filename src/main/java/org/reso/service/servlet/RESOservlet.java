@@ -10,6 +10,7 @@ import org.reso.service.data.definition.LookupDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
 import org.reso.service.security.BasicAuthProvider;
+import org.reso.service.security.BearerAuthProvider;
 import org.reso.service.security.Validator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +44,8 @@ public class RESOservlet extends HttpServlet
       }
 
       this.validator = new Validator();
-      this.validator.addProvider(new BasicAuthProvider());
+      //this.validator.addProvider(new BasicAuthProvider());
+      this.validator.addProvider(new BearerAuthProvider());
 
       String mysqlHost = env.get("SQL_HOST");
       String mysqlUser = env.get("SQL_USER");

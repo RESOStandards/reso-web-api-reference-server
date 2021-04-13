@@ -2,7 +2,6 @@ package org.reso.service.data.definition;
 
 
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.reso.service.data.LookupEntityCollectionProcessor;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 

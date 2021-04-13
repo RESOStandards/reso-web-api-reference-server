@@ -1,9 +1,7 @@
 package org.reso.service.data.meta;
 
 
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
-import org.reso.service.data.LookupEntityCollectionProcessor;
 
 import java.util.ArrayList;
 
