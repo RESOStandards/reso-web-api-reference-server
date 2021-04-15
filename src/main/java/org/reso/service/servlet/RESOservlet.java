@@ -1,6 +1,7 @@
 package org.reso.service.servlet;
 
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.olingo.commons.api.edmx.EdmxReference;
 import org.apache.olingo.server.api.OData;
 import org.apache.olingo.server.api.ODataHttpHandler;
@@ -9,9 +10,10 @@ import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.definition.LookupDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
-import org.reso.service.security.BasicAuthProvider;
-import org.reso.service.security.BearerAuthProvider;
+import org.reso.service.security.providers.BasicAuthProvider;
 import org.reso.service.security.Validator;
+import org.reso.service.security.providers.BearerAuthProvider;
+import org.reso.service.servlet.util.SimpleError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -23,12 +25,15 @@ import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 
+
 public class RESOservlet extends HttpServlet
 {
    private static final long   serialVersionUID = 1L;
    private static final Logger     LOG     = LoggerFactory.getLogger(RESOservlet.class);
    private Connection connect = null;
    private Validator  validator = null;
+   private OData odata = null;
+   ODataHttpHandler handler = null;
 
 
    @Override public void init() throws ServletException
@@ -44,7 +49,7 @@ public class RESOservlet extends HttpServlet
       }
 
       this.validator = new Validator();
-      //this.validator.addProvider(new BasicAuthProvider());
+      this.validator.addProvider(new BasicAuthProvider());
       this.validator.addProvider(new BearerAuthProvider());
 
       String mysqlHost = env.get("SQL_HOST");
@@ -64,33 +69,42 @@ public class RESOservlet extends HttpServlet
       } catch (Exception e) {
          LOG.error("Server Error occurred in connecting to the database", e);
       }
+
+      // Set up ODATA
+      this.odata = OData.newInstance();
+      RESOedmProvider edmProvider = new RESOedmProvider();
+
+      ResourceInfo defn = new LookupDefinition();
+      edmProvider.addDefinition(defn);
+
+      ServiceMetadata edm = odata.createServiceMetadata(edmProvider, new ArrayList<EdmxReference>());
+
+      // create odata handler and configure it with CsdlEdmProvider and Processor
+      this.handler = odata.createHandler(edm);
+
+      GenericEntityCollectionProcessor lookupEntityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect, defn);
+
+      this.handler.register(lookupEntityCollectionProcessor);
+
    }
 
 
    protected void service(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException {
+
+      // Due to order of operations, the unauthorized response won't be called unless the verification fails.
       if (!this.validator.verify(req) && this.validator.unauthorizedResponse(resp))
-      {  // Due to order of operations, the unauthorized response won't be called unless the verification fails.
-         resp.getWriter().println("<html><body><p>Unauthorized</p></body></html>");
+      {
+         SimpleError error = new SimpleError(SimpleError.AUTH_REQUIRED);
+         ObjectMapper objectMapper = new ObjectMapper();
+
+         PrintWriter out = resp.getWriter();
+         out.println(objectMapper.writeValueAsString(error));
+         out.flush();
          return;
       }
 
       try {
-         // create odata handler and configure it with CsdlEdmProvider and Processor
-         OData odata = OData.newInstance();
-         RESOedmProvider edmProvider = new RESOedmProvider();
-
-         ResourceInfo defn = new LookupDefinition();
-         edmProvider.addDefinition(defn);
-
-         ServiceMetadata edm = odata.createServiceMetadata(edmProvider, new ArrayList<EdmxReference>());
-         ODataHttpHandler handler = odata.createHandler(edm);
-
-         GenericEntityCollectionProcessor lookupEntityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect, defn);
-
-         handler.register(lookupEntityCollectionProcessor);
-
-         // let the handler do the work
-         handler.process(req, resp);
+         this.handler.process(req, resp);
 
       } catch (RuntimeException e) {
          LOG.error("Server Error occurred in RESOservlet", e);

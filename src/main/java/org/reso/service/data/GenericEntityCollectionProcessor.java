@@ -87,6 +87,17 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       EntityCollection entitySet = getData(edmEntitySet);
 
       // 3rd: create a serializer based on the requested format (json)
+      try
+      {
+         uriInfo.asUriInfoAll().getFormatOption().getFormat();  // If Format is given, then we will use what it has.
+      }
+      catch (Exception e)
+      {
+         responseFormat = ContentType.JSON;  // If format is not set in the $format, then use JSON.
+         // There is some magic that will select XML if you're viewing from a browser or something which I'm bypassing here.
+         // If you want a different $format, explicitly state it.
+      }
+
       ODataSerializer serializer = odata.createSerializer(responseFormat);
 
       // 4th: Now serialize the content: transform from the EntitySet object to InputStream

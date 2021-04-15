@@ -46,6 +46,12 @@
         </dependency>
 
         <dependency>
+            <groupId>com.fasterxml.jackson.core</groupId>
+            <artifactId>jackson-databind</artifactId>
+            <version>2.11.1</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.olingo</groupId>
             <artifactId>odata-commons-api</artifactId>
             <version>${odata.version}</version>

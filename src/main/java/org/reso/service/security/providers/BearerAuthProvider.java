@@ -1,12 +1,12 @@
-package org.reso.service.security;
+package org.reso.service.security.providers;
 
 
+import org.reso.service.security.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import java.util.Base64;
 import java.util.Enumeration;
 
 public class BearerAuthProvider implements Provider

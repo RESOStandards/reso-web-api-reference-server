@@ -1,7 +1,7 @@
-package org.reso.service.security;
+package org.reso.service.security.providers;
 
 
-import org.reso.service.servlet.RESOservlet;
+import org.reso.service.security.Provider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
