@@ -1,6 +1,7 @@
 package org.reso.service.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.PropertyNamingStrategy;
 import org.reso.service.security.providers.BearerAuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

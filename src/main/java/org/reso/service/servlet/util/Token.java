@@ -1,12 +1,16 @@
 package org.reso.service.servlet.util;
 
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 
 public class Token
 {
-   String accessToken;
-   String tokenType;
-   String scope;
+   // One must conform to the snake case naming convention for JSON representation of these properties
+   @JsonProperty("access_token")
+   private String accessToken;
+   @JsonProperty("token_type")
+   private String tokenType;
+   private String scope;
 
 
    public Token(String authBearerToken, String tokenType, String scope)
@@ -49,6 +53,8 @@ public class Token
       this.scope = scope;
    }
 
+
+   // Accessors, used by ObjectMapper to serialize the token.
 
    public String getAccessToken()
    {

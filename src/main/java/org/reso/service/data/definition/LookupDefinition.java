@@ -14,7 +14,7 @@ public class LookupDefinition extends ResourceInfo
    public LookupDefinition()
    {
       this.tableName = "lookup";
-      this.resourcesName = "Lookups";
+      this.resourcesName = "Lookup";
       this.resourceName = "Lookup";
    }
 
