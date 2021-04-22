@@ -90,7 +90,7 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
-        
+
         <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-annotations</artifactId>
