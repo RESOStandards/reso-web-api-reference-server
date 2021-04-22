@@ -2,6 +2,7 @@ package org.reso.service.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.PropertyNamingStrategy;
+import org.reso.service.security.providers.BasicAuthProvider;
 import org.reso.service.security.providers.BearerAuthProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,6 +55,8 @@ public class TokenServlet extends HttpServlet
       String client_id = getField(req, TokenServlet.ID_HEADER);
       String client_secret = getField(req, TokenServlet.SECRET_HEADER);
 
+      BasicAuthProvider validator = new BasicAuthProvider();
+
       String jsonString = null;
 
       PrintWriter out = response.getWriter();
@@ -62,7 +65,10 @@ public class TokenServlet extends HttpServlet
 
       ObjectMapper objectMapper = new ObjectMapper();
 
-      if (client_id!=null && client_secret!=null && client_id.equals(TokenServlet.AUTH_CLIENT_ID)  && client_secret.equals(TokenServlet.AUTH_CLIENT_SECRET))
+      if (validator.verify(req) ||
+          ( client_id!=null && client_secret!=null &&
+            client_id.equals(TokenServlet.AUTH_CLIENT_ID)  && client_secret.equals(TokenServlet.AUTH_CLIENT_SECRET) )
+          )
       {
          Token token = new Token(BearerAuthProvider.AUTH_BEARER_TOKEN,"bearer","create");
 

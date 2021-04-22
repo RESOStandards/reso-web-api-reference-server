@@ -49,7 +49,7 @@ public class RESOservlet extends HttpServlet
       }
 
       this.validator = new Validator();
-      this.validator.addProvider(new BasicAuthProvider());
+//      this.validator.addProvider(new BasicAuthProvider());
       this.validator.addProvider(new BearerAuthProvider());
 
       String mysqlHost = env.get("SQL_HOST");

@@ -18,7 +18,7 @@ public class BasicAuthProvider implements Provider
    public static final String AUTH_SEP = ":";
 
    public static final String AUTH_USER = "reso";
-   public static final String AUTH_PASSWORD = "reso-test-password";
+   public static final String AUTH_PASSWORD = "secret";
 
    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthProvider.class);
 
@@ -38,6 +38,7 @@ public class BasicAuthProvider implements Provider
          if (authResp!=null && authResp.length()>0)
          {
             String[] parts = authResp.split(BasicAuthProvider.AUTH_SPACE);
+            LOG.info("header:"+authResp);
             if (parts[0].equals(BasicAuthProvider.BASIC_STR) && parts.length==2)
             {
                String base64decoded = new String(Base64.getDecoder().decode(parts[1]));
@@ -47,6 +48,8 @@ public class BasicAuthProvider implements Provider
                {
                   String username = parts[0];
                   String password = parts[1];
+                  LOG.info("User:"+username);
+                  LOG.info("Pass:"+password);
 
                   if (username.equals(AUTH_USER) && password.equals(AUTH_PASSWORD))
                   {

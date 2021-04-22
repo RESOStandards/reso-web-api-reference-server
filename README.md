@@ -18,7 +18,7 @@ Run the `run.sh`
 
 ## Access the Server
 
-Assuming you're running the server locally, go to [http://localhost:8080/RESOservice-1.0/Lookup](http://localhost:8080/RESOservice-1.0/Lookup)\
+Assuming you're running the server locally, go to [http://localhost:8080/RESOservice-1.0/$metadata](http://localhost:8080/RESOservice-1.0/$metadata)\
 Otherwise, you will have to replace `localhost` with the IP of your Docker machine.
 
 ## Running with a different database
