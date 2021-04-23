@@ -23,7 +23,7 @@ public class BasicAuthProvider implements Provider
    private static final Logger LOG = LoggerFactory.getLogger(BasicAuthProvider.class);
 
    /**
-    * A simple BEARER Token Auth with a set token.
+    * A simple BASIC Auth with static username and password.
     * @param req The HTTP Request object from the servlet.
     * @return true if authorized, false otherwise.
     */
@@ -38,7 +38,6 @@ public class BasicAuthProvider implements Provider
          if (authResp!=null && authResp.length()>0)
          {
             String[] parts = authResp.split(BasicAuthProvider.AUTH_SPACE);
-            LOG.info("header:"+authResp);
             if (parts[0].equals(BasicAuthProvider.BASIC_STR) && parts.length==2)
             {
                String base64decoded = new String(Base64.getDecoder().decode(parts[1]));
@@ -48,8 +47,6 @@ public class BasicAuthProvider implements Provider
                {
                   String username = parts[0];
                   String password = parts[1];
-                  LOG.info("User:"+username);
-                  LOG.info("Pass:"+password);
 
                   if (username.equals(AUTH_USER) && password.equals(AUTH_PASSWORD))
                   {

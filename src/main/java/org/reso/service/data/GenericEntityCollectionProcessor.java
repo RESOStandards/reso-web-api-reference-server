@@ -18,7 +18,10 @@ import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.queryoption.*;
+import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.reso.service.data.meta.FieldInfo;
+import org.reso.service.data.meta.FilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
 import org.slf4j.Logger;
@@ -30,6 +33,7 @@ import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 public class GenericEntityCollectionProcessor implements EntityCollectionProcessor
@@ -82,9 +86,18 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0); // in our example, the first segment is the EntitySet
       EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
 
+      boolean isCount = false;
+      CountOption countOption = uriInfo.getCountOption();
+      if (countOption != null) {
+         isCount = countOption.getValue();
+         if (isCount){
+            LOG.info("Count str:"+countOption.getText() );
+         }
+      }
+
       // 2nd: fetch the data from backend for this requested EntitySetName
       // it has to be delivered as EntitySet object
-      EntityCollection entitySet = getData(edmEntitySet);
+      EntityCollection entitySet = getData(edmEntitySet, uriInfo, isCount);
 
       // 3rd: create a serializer based on the requested format (json)
       try
@@ -105,7 +118,19 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
 
       final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
-      EntityCollectionSerializerOptions opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).build();
+      EntityCollectionSerializerOptions opts = null;
+      if (isCount)  // If there's a $count=true in the query string, we need to have a different formatting options.
+      {
+         opts = EntityCollectionSerializerOptions.with()
+                  .contextURL(contextUrl)
+                  .id(id)
+                  .count(countOption)
+                  .build();
+      }
+      else
+      {
+         opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).build();
+      }
       SerializerResult serializerResult = serializer.entityCollection(serviceMetadata, edmEntityType, entitySet, opts);
       InputStream serializedContent = serializerResult.getContent();
 
@@ -116,20 +141,85 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    }
 
 
-   protected EntityCollection getData(EdmEntitySet edmEntitySet){
+   protected EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException {
       ArrayList<FieldInfo> fields = this.resourceInfo.getFieldList();
 
-      EntityCollection lookupsCollection = new EntityCollection();
+      EntityCollection entCollection = new EntityCollection();
 
-      List<Entity> productList = lookupsCollection.getEntities();
+      List<Entity> productList = entCollection.getEntities();
 
       Map<String, String> properties = System.getenv();
 
       try {
+
+         FilterOption filter = uriInfo.getFilterOption();
+         String sqlCriteria = null;
+         if (filter!=null)
+         {
+            sqlCriteria = filter.getExpression().accept(new FilterExpressionVisitor(this.resourceInfo));
+         }
+
          // Statements allow to issue SQL queries to the database
          Statement statement = connect.createStatement();
          // Result set get the result of the SQL query
-         ResultSet resultSet = statement.executeQuery("select * from "+this.resourceInfo.getTableName());
+         String queryString = null;
+
+         // Logic for $count
+         if (isCount)
+         {
+            queryString = "select count(*) AS rowcount from " + this.resourceInfo.getTableName();
+         }
+         else
+         {
+            queryString = "select * from " + this.resourceInfo.getTableName();
+         }
+         if (null!=sqlCriteria && sqlCriteria.length()>0)
+         {
+            queryString = queryString + " WHERE " + sqlCriteria;
+         }
+
+         // Logic for $top
+         TopOption topOption = uriInfo.getTopOption();
+         if (topOption != null) {
+            int topNumber = topOption.getValue();
+            if (topNumber >= 0)
+            {
+               // Logic for $skip
+               SkipOption skipOption = uriInfo.getSkipOption();
+               if (skipOption != null)
+               {
+                  int skipNumber = skipOption.getValue();
+                  if (skipNumber >= 0)
+                  {
+                     queryString = queryString + " LIMIT "+skipNumber+", "+topNumber;
+                  }
+                  else
+                  {
+                     throw new ODataApplicationException("Invalid value for $skip", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+                  }
+               }
+               else
+               {
+                  queryString = queryString + " LIMIT " + topNumber;
+               }
+            }
+            else
+            {
+               throw new ODataApplicationException("Invalid value for $top", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+            }
+         }
+
+         LOG.info("SQL Query: "+queryString);
+         ResultSet resultSet = statement.executeQuery(queryString);
+
+         // special return logic for $count
+         if (isCount && resultSet.next())
+         {
+            int size = resultSet.getInt("rowcount");
+            LOG.info("Size = "+size);
+            entCollection.setCount(size);
+            return entCollection;
+         }
 
          String primaryFieldName = fields.get(0).getFieldName();
 
@@ -149,7 +239,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                }
                else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
                {
-                  value = resultSet.getDate(fieldName);
+                  value = resultSet.getTimestamp(fieldName);
                }
                else
                {
@@ -167,10 +257,10 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
       } catch (Exception e) {
             LOG.error("Server Error occurred in reading "+this.resourceInfo.getResourceName(), e);
-         return lookupsCollection;
+         return entCollection;
       }
 
-      return lookupsCollection;
+      return entCollection;
    }
 
    private URI createId(String entitySetName, Object id) {

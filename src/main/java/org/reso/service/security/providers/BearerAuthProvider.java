@@ -20,7 +20,7 @@ public class BearerAuthProvider implements Provider
    private static final Logger LOG = LoggerFactory.getLogger(BearerAuthProvider.class);
 
    /**
-    * A simple BASIC Auth with static username and password.  Purely for testing purposes.
+    * A simple BEARER Token Auth with a set token.
     * @param req The HTTP Request object from the servlet.
     * @return true if authorized, false otherwise.
     */
