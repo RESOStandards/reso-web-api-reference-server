@@ -5,6 +5,7 @@ import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.EdmProperty;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -15,10 +16,10 @@ import org.apache.olingo.server.api.serializer.EntityCollectionSerializerOptions
 import org.apache.olingo.server.api.serializer.ODataSerializer;
 import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
-import org.apache.olingo.server.api.uri.UriInfo;
-import org.apache.olingo.server.api.uri.UriResource;
-import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.*;
 import org.apache.olingo.server.api.uri.queryoption.*;
+import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
+import org.apache.olingo.server.api.uri.queryoption.expression.Member;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.FilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
@@ -206,6 +207,28 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             }
          }
 
+         OrderByOption orderByOption = uriInfo.getOrderByOption();
+         if (orderByOption != null)
+         {
+            List<OrderByItem> orderItemList = orderByOption.getOrders();
+            final OrderByItem orderByItem = orderItemList.get(0); // we support only one
+            Expression expression = orderByItem.getExpression();
+            if (expression instanceof Member)
+            {
+               UriInfoResource resourcePath = ((Member)expression).getResourcePath();
+               UriResource uriResource = resourcePath.getUriResourceParts().get(0);
+               if (uriResource instanceof UriResourcePrimitiveProperty)
+               {
+                  EdmProperty edmProperty = ((UriResourcePrimitiveProperty) uriResource).getProperty();
+                  final String sortPropertyName = edmProperty.getName();
+                  queryString = queryString + " ORDER BY "+sortPropertyName;
+                  if(orderByItem.isDescending())
+                  {
+                     queryString = queryString + " DESC";
+                  }
+               }
+            }
+         }
          LOG.debug("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 
