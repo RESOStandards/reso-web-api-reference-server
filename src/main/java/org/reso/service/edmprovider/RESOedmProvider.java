@@ -49,6 +49,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          // create CsdlPropertyRef for Key element
          CsdlPropertyRef propertyRef = new CsdlPropertyRef();
          propertyRef.setName(primaryFieldName);
+         LOG.debug("Primary key is: "+primaryFieldName);
 
          for (FieldInfo field : fields)
          {

@@ -7,6 +7,7 @@ import org.apache.olingo.server.api.OData;
 import org.apache.olingo.server.api.ODataHttpHandler;
 import org.apache.olingo.server.api.ServiceMetadata;
 import org.reso.service.data.GenericEntityCollectionProcessor;
+import org.reso.service.data.GenericEntityProcessor;
 import org.reso.service.data.definition.LookupDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
@@ -83,8 +84,10 @@ public class RESOservlet extends HttpServlet
       this.handler = odata.createHandler(edm);
 
       GenericEntityCollectionProcessor lookupEntityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect, defn);
+      GenericEntityProcessor lookupEntityProcessor = new GenericEntityProcessor(this.connect, defn);
 
       this.handler.register(lookupEntityCollectionProcessor);
+      this.handler.register(lookupEntityProcessor);
 
    }
 

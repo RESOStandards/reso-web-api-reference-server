@@ -19,11 +19,9 @@ import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.apache.olingo.server.api.uri.queryoption.*;
-import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.FilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
-import org.reso.service.edmprovider.RESOedmProvider;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,8 +39,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    private              OData                odata;
    private              ServiceMetadata      serviceMetadata;
    private              Connection           connect           = null;
-   private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
    private              ResourceInfo         resourceInfo      = null;
+   private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
 
    public GenericEntityCollectionProcessor(Connection connection, ResourceInfo resourceInfo)
    {
@@ -140,7 +138,6 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
    }
 
-
    protected EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException {
       ArrayList<FieldInfo> fields = this.resourceInfo.getFieldList();
 
@@ -209,14 +206,14 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             }
          }
 
-         LOG.info("SQL Query: "+queryString);
+         LOG.debug("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 
          // special return logic for $count
          if (isCount && resultSet.next())
          {
             int size = resultSet.getInt("rowcount");
-            LOG.info("Size = "+size);
+            LOG.debug("Size = "+size);
             entCollection.setCount(size);
             return entCollection;
          }
@@ -265,7 +262,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
    private URI createId(String entitySetName, Object id) {
       try {
-         return new URI(entitySetName + "(" + String.valueOf(id) + ")");
+         return new URI(entitySetName + "('" + String.valueOf(id) + "')");
       } catch (URISyntaxException e) {
          throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
       }
