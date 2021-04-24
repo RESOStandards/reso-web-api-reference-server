@@ -5,8 +5,10 @@ services:
     build: ./
     expose:
       - "8080"
+      - "8000"
     ports:
       - 8080:8080
+      - 8000:8000
     environment:
       - SQL_HOST
       - SQL_USER

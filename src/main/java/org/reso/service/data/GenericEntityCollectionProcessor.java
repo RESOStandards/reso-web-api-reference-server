@@ -18,6 +18,7 @@ import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.*;
 import org.apache.olingo.server.api.uri.queryoption.*;
+import org.apache.olingo.server.api.uri.queryoption.expression.BinaryOperatorKind;
 import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.apache.olingo.server.api.uri.queryoption.expression.Member;
 import org.reso.service.data.meta.FieldInfo;
@@ -30,10 +31,7 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class GenericEntityCollectionProcessor implements EntityCollectionProcessor
 {
@@ -128,7 +126,19 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       }
       else
       {
-         opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).build();
+         SelectOption selectOption = uriInfo.getSelectOption();
+         if (selectOption!=null)
+         {
+            opts = EntityCollectionSerializerOptions.with()
+                     .contextURL(contextUrl)
+                     .select(selectOption)
+                     .id(id)
+                     .build();
+         }
+         else
+         {
+            opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).build();
+         }
       }
       SerializerResult serializerResult = serializer.entityCollection(serviceMetadata, edmEntityType, entitySet, opts);
       InputStream serializedContent = serializerResult.getContent();
@@ -149,6 +159,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       Map<String, String> properties = System.getenv();
 
       try {
+         String primaryFieldName = fields.get(0).getFieldName();
 
          FilterOption filter = uriInfo.getFilterOption();
          String sqlCriteria = null;
@@ -156,6 +167,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          {
             sqlCriteria = filter.getExpression().accept(new FilterExpressionVisitor(this.resourceInfo));
          }
+         HashMap<String,Boolean> selectLookup = null;
 
          // Statements allow to issue SQL queries to the database
          Statement statement = connect.createStatement();
@@ -169,7 +181,28 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          }
          else
          {
-            queryString = "select * from " + this.resourceInfo.getTableName();
+            SelectOption selectOption = uriInfo.getSelectOption();
+            if (selectOption!=null)
+            {
+               selectLookup = new HashMap<String,Boolean>();
+               selectLookup.put(primaryFieldName,true);
+
+               for (SelectItem sel:selectOption.getSelectItems())
+               {
+                  String val = sel.getResourcePath().getUriResourceParts().get(0).toString();
+                  selectLookup.put(val,true);
+               }
+               EdmEntityType edmEntityType = edmEntitySet.getEntityType();
+               String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
+                                                                                     null, selectOption);
+
+               LOG.debug("Select list:"+selectList);
+               queryString = "select "+selectList+" from " + this.resourceInfo.getTableName();
+            }
+            else
+            {
+               queryString = "select * from " + this.resourceInfo.getTableName();
+            }
          }
          if (null!=sqlCriteria && sqlCriteria.length()>0)
          {
@@ -241,32 +274,32 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             return entCollection;
          }
 
-         String primaryFieldName = fields.get(0).getFieldName();
-
          // add the lookups from the database.
          while (resultSet.next())
          {
-
             String lookupKey = resultSet.getString(primaryFieldName);
             Entity ent = new Entity();
             for (FieldInfo field : fields)
             {
                String fieldName = field.getFieldName();
                Object value = null;
-               if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
+               if (selectLookup==null || selectLookup.containsKey(fieldName) )
                {
-                  value = resultSet.getString(fieldName);
+                  if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
+                  {
+                     value = resultSet.getString(fieldName);
+                  }
+                  else
+                     if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
+                     {
+                        value = resultSet.getTimestamp(fieldName);
+                     }
+                     else
+                     {
+                        LOG.info("Field Name: " + field.getFieldName() + " Field type: " + field.getType());
+                     }
+                  ent.addProperty(new Property(null, fieldName,ValueType.PRIMITIVE, value));
                }
-               else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
-               {
-                  value = resultSet.getTimestamp(fieldName);
-               }
-               else
-               {
-                  LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
-               }
-
-               ent.addProperty(new Property(null, fieldName,ValueType.PRIMITIVE, value));
             }
 
             ent.setId(createId(this.resourceInfo.getResourcesName(), lookupKey));
