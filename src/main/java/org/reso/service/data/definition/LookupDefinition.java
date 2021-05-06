@@ -35,7 +35,7 @@ public class LookupDefinition extends ResourceInfo
       FieldInfo fieldInfo = null;
 
       fieldInfo = new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      fieldInfo.addAnnotation("Lookup Key Field", "RESO.OData.Metadata.StandardName");
+      fieldInfo.addAnnotation("Lookup Key Field", "RESO.OData.Metadata.DisplayName");
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("LookupName", EdmPrimitiveTypeKind.String.getFullQualifiedName());

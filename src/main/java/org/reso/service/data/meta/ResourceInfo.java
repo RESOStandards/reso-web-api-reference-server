@@ -1,8 +1,16 @@
 package org.reso.service.data.meta;
 
 
+import org.apache.olingo.commons.api.data.Entity;
+import org.apache.olingo.commons.api.data.Property;
+import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.reso.service.data.common.CommonDataProcessing;
+import org.reso.service.servlet.RESOservlet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.sql.*;
 import java.util.ArrayList;
 
 public class ResourceInfo
@@ -11,6 +19,9 @@ public class ResourceInfo
    protected String resourceName;
    protected String resourcesName;
    protected FullQualifiedName fqn;
+   protected String primaryKeyName;
+
+   protected static final Logger LOG = LoggerFactory.getLogger(ResourceInfo.class);
 
    /**
     * Accessors
@@ -31,6 +42,11 @@ public class ResourceInfo
       return resourceName;
    }
 
+   public String getPrimaryKeyName()
+   {
+      return primaryKeyName;
+   }
+
    public ArrayList<FieldInfo> getFieldList()
    {
       return null;
@@ -42,6 +58,27 @@ public class ResourceInfo
          this.fqn = new FullQualifiedName(namespace, getResourceName());
 
       return this.fqn;
+   }
+
+   public void findPrimaryKey(Connection connect) throws SQLException
+   {
+      String primaryKey = null;
+
+      ResultSet pkColumns = connect.getMetaData().getPrimaryKeys(null, null, getTableName());
+
+      while(pkColumns.next()) {
+         String pkColumnName = pkColumns.getString("COLUMN_NAME");
+         Integer pkPosition = pkColumns.getInt("KEY_SEQ");
+         LOG.info(""+pkColumnName+" is the "+pkPosition+". column of the primary key of the table "+tableName);
+         primaryKey = pkColumnName;
+      }
+
+      String[] splitKey = primaryKey.split("Numeric");
+      if (splitKey.length>=1)
+         primaryKey = splitKey[0];
+
+
+      this.primaryKeyName = primaryKey;
    }
 
 }

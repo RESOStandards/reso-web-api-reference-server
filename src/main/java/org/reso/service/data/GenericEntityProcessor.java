@@ -22,6 +22,7 @@ import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.apache.olingo.server.api.uri.queryoption.FilterOption;
 import org.apache.olingo.server.api.uri.queryoption.SkipOption;
 import org.apache.olingo.server.api.uri.queryoption.TopOption;
+import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.FilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
@@ -34,24 +35,26 @@ import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
+import java.util.*;
 
 public class GenericEntityProcessor implements EntityProcessor
 {
    private OData odata;
    private ServiceMetadata serviceMetadata;
    private Connection connect;
-   ResourceInfo resourceInfo;
+   HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger LOG = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
 
 
-   public GenericEntityProcessor(Connection connect, ResourceInfo resourceInfo)
+   public GenericEntityProcessor(Connection connect)
    {
       this.connect = connect;
-      this.resourceInfo = resourceInfo;
+      this.resourceList = new HashMap<>();
+   }
+
+   public void addResource(ResourceInfo resource, String name)
+   {
+      resourceList.put(name,resource);
    }
 
 
@@ -64,9 +67,11 @@ public class GenericEntityProcessor implements EntityProcessor
       UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
       EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
 
+      ResourceInfo resource = this.resourceList.get(resourcePaths.get(0).toString());
+
       // 2. retrieve the data from backend
       List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
-      Entity entity = getData(edmEntitySet, keyPredicates);
+      Entity entity = getData(edmEntitySet, keyPredicates, resource);
 
       // 3. serialize
       EdmEntityType entityType = edmEntitySet.getEntityType();
@@ -85,10 +90,8 @@ public class GenericEntityProcessor implements EntityProcessor
       response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
    }
 
-   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates) throws ODataApplicationException {
-      ArrayList<FieldInfo> fields = this.resourceInfo.getFieldList();
-
-      EntityCollection entCollection = new EntityCollection();
+   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource) throws ODataApplicationException {
+      ArrayList<FieldInfo> fields = resource.getFieldList();
 
       Entity product = null;
 
@@ -118,7 +121,7 @@ public class GenericEntityProcessor implements EntityProcessor
             }
          }
 
-         queryString = "select * from " + this.resourceInfo.getTableName();
+         queryString = "select * from " + resource.getTableName();
 
          if (null!=sqlCriteria && sqlCriteria.length()>0)
          {
@@ -128,7 +131,7 @@ public class GenericEntityProcessor implements EntityProcessor
          LOG.debug("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 
-         String primaryFieldName = fields.get(0).getFieldName();
+         String primaryFieldName = resource.getPrimaryKeyName();
 
          // add the lookups from the database.
          while (resultSet.next())
@@ -139,31 +142,19 @@ public class GenericEntityProcessor implements EntityProcessor
             for (FieldInfo field : fields)
             {
                String fieldName = field.getFieldName();
-               Object value = null;
-               if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
-               {
-                  value = resultSet.getString(fieldName);
-               }
-               else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
-               {
-                  value = resultSet.getTimestamp(fieldName);
-               }
-               else
-               {
-                  LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
-               }
+               Object value = CommonDataProcessing.getFieldValueFromRow(field,resultSet);
 
                ent.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, value));
             }
 
-            ent.setId(createId(this.resourceInfo.getResourcesName(), lookupKey));
+            ent.setId(createId(resource.getResourcesName(), lookupKey));
             product = ent;
          }
 
          statement.close();
 
       } catch (Exception e) {
-         LOG.error("Server Error occurred in reading "+this.resourceInfo.getResourceName(), e);
+         LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
          return product;
       }
 

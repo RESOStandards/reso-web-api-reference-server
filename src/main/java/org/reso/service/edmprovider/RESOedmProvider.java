@@ -1,8 +1,6 @@
 package org.reso.service.edmprovider;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.*;
-import org.apache.olingo.commons.api.ex.ODataException;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 import org.slf4j.Logger;
@@ -42,7 +40,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       try
       {
          ArrayList<FieldInfo> fields = defn.getFieldList();
-         String primaryFieldName = fields.get(0).getFieldName();
+         String primaryFieldName = defn.getPrimaryKeyName();
 
          ArrayList<CsdlProperty> propertyList = new ArrayList<>();
 

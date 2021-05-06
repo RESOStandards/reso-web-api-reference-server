@@ -18,9 +18,9 @@ import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.*;
 import org.apache.olingo.server.api.uri.queryoption.*;
-import org.apache.olingo.server.api.uri.queryoption.expression.BinaryOperatorKind;
 import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.apache.olingo.server.api.uri.queryoption.expression.Member;
+import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.FilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
@@ -38,15 +38,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    private              OData                odata;
    private              ServiceMetadata      serviceMetadata;
    private              Connection           connect           = null;
-   private              ResourceInfo         resourceInfo      = null;
+   HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
-
-   public GenericEntityCollectionProcessor(Connection connection, ResourceInfo resourceInfo)
-   {
-      this.connect = connection;
-      this.resourceInfo = resourceInfo;
-   }
-
 
    /**
     * If you use this constructor, make sure to set your resourceInfo
@@ -54,6 +47,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
     */
    public GenericEntityCollectionProcessor(Connection connection)
    {
+      this.resourceList = new HashMap<>();
       this.connect = connection;
    }
 
@@ -62,17 +56,10 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       this.serviceMetadata = serviceMetadata;
    }
 
-
-   /**
-    * Set the attribute with the name that corresponds to this method name.
-    *
-    * @param resourceInfo The value to set the attribute to.
-    */
-   protected void setResourceInfo(ResourceInfo resourceInfo)
+   public void addResource(ResourceInfo resource, String name)
    {
-      this.resourceInfo = resourceInfo;
+      resourceList.put(name,resource);
    }
-
 
    public void readEntityCollection(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType responseFormat)
             throws ODataApplicationException, SerializerException
@@ -83,18 +70,23 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0); // in our example, the first segment is the EntitySet
       EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
 
+
+      String resourceName = uriResourceEntitySet.toString();
+
+      ResourceInfo resource = this.resourceList.get(resourceName);
+
       boolean isCount = false;
       CountOption countOption = uriInfo.getCountOption();
       if (countOption != null) {
          isCount = countOption.getValue();
          if (isCount){
-            LOG.info("Count str:"+countOption.getText() );
+            LOG.debug("Count str:"+countOption.getText() );
          }
       }
 
       // 2nd: fetch the data from backend for this requested EntitySetName
       // it has to be delivered as EntitySet object
-      EntityCollection entitySet = getData(edmEntitySet, uriInfo, isCount);
+      EntityCollection entitySet = getData(edmEntitySet, uriInfo, isCount, resource);
 
       // 3rd: create a serializer based on the requested format (json)
       try
@@ -149,8 +141,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
    }
 
-   protected EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException {
-      ArrayList<FieldInfo> fields = this.resourceInfo.getFieldList();
+   protected EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount, ResourceInfo resource) throws ODataApplicationException {
+      ArrayList<FieldInfo> fields = resource.getFieldList();
 
       EntityCollection entCollection = new EntityCollection();
 
@@ -159,13 +151,13 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       Map<String, String> properties = System.getenv();
 
       try {
-         String primaryFieldName = fields.get(0).getFieldName();
+         String primaryFieldName = resource.getPrimaryKeyName();
 
          FilterOption filter = uriInfo.getFilterOption();
          String sqlCriteria = null;
          if (filter!=null)
          {
-            sqlCriteria = filter.getExpression().accept(new FilterExpressionVisitor(this.resourceInfo));
+            sqlCriteria = filter.getExpression().accept(new FilterExpressionVisitor(resource));
          }
          HashMap<String,Boolean> selectLookup = null;
 
@@ -177,14 +169,14 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          // Logic for $count
          if (isCount)
          {
-            queryString = "select count(*) AS rowcount from " + this.resourceInfo.getTableName();
+            queryString = "select count(*) AS rowcount from " + resource.getTableName();
          }
          else
          {
             SelectOption selectOption = uriInfo.getSelectOption();
             if (selectOption!=null)
             {
-               selectLookup = new HashMap<String,Boolean>();
+               selectLookup = new HashMap<>();
                selectLookup.put(primaryFieldName,true);
 
                for (SelectItem sel:selectOption.getSelectItems())
@@ -197,11 +189,11 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                                                                                      null, selectOption);
 
                LOG.debug("Select list:"+selectList);
-               queryString = "select "+selectList+" from " + this.resourceInfo.getTableName();
+               queryString = "select "+selectList+" from " + resource.getTableName();
             }
             else
             {
-               queryString = "select * from " + this.resourceInfo.getTableName();
+               queryString = "select * from " + resource.getTableName();
             }
          }
          if (null!=sqlCriteria && sqlCriteria.length()>0)
@@ -285,31 +277,19 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                Object value = null;
                if (selectLookup==null || selectLookup.containsKey(fieldName) )
                {
-                  if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
-                  {
-                     value = resultSet.getString(fieldName);
-                  }
-                  else
-                     if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
-                     {
-                        value = resultSet.getTimestamp(fieldName);
-                     }
-                     else
-                     {
-                        LOG.info("Field Name: " + field.getFieldName() + " Field type: " + field.getType());
-                     }
+                  value = CommonDataProcessing.getFieldValueFromRow(field, resultSet);
                   ent.addProperty(new Property(null, fieldName,ValueType.PRIMITIVE, value));
                }
             }
 
-            ent.setId(createId(this.resourceInfo.getResourcesName(), lookupKey));
+            ent.setId(createId(resource.getResourcesName(), lookupKey));
             productList.add(ent);
          }
 
          statement.close();
 
       } catch (Exception e) {
-            LOG.error("Server Error occurred in reading "+this.resourceInfo.getResourceName(), e);
+            LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
          return entCollection;
       }
 

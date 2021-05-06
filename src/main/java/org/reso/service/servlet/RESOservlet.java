@@ -14,11 +14,13 @@ import org.reso.service.edmprovider.RESOedmProvider;
 import org.reso.service.security.providers.BasicAuthProvider;
 import org.reso.service.security.Validator;
 import org.reso.service.security.providers.BearerAuthProvider;
+import org.reso.service.servlet.util.ClassLoader;
 import org.reso.service.servlet.util.SimpleError;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.*;
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
@@ -75,19 +77,57 @@ public class RESOservlet extends HttpServlet
       this.odata = OData.newInstance();
       RESOedmProvider edmProvider = new RESOedmProvider();
 
-      ResourceInfo defn = new LookupDefinition();
-      edmProvider.addDefinition(defn);
+      ArrayList<ResourceInfo> resources = new ArrayList<>();
+
+      // Get all classes with constructors with 0 parameters.  LookupDefinition should not work.
+      try
+      {
+         Class[] classList = ClassLoader.getClasses("org.reso.service.data.definition");
+         for (Class classProto: classList)
+         {
+            Constructor ctor = null;
+            Constructor[] ctors = classProto.getDeclaredConstructors();
+            for (int i = 0; i < ctors.length; i++) {
+               ctor = ctors[i];
+               if (ctor.getGenericParameterTypes().length == 0)
+                  break;
+            }
+            if (ctor!=null)
+            {
+               ctor.setAccessible(true);
+               ResourceInfo resource = (ResourceInfo)ctor.newInstance();
+               resources.add(resource);
+
+               resource.findPrimaryKey(this.connect);
+            }
+         }
+      }
+      catch (Exception e)
+      {
+         LOG.error(e.getMessage());
+      }
+
+//      ResourceInfo defn = new LookupDefinition();
 
       ServiceMetadata edm = odata.createServiceMetadata(edmProvider, new ArrayList<EdmxReference>());
 
       // create odata handler and configure it with CsdlEdmProvider and Processor
       this.handler = odata.createHandler(edm);
 
-      GenericEntityCollectionProcessor lookupEntityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect, defn);
-      GenericEntityProcessor lookupEntityProcessor = new GenericEntityProcessor(this.connect, defn);
+      GenericEntityCollectionProcessor entityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect);
+      GenericEntityProcessor entityProcessor = new GenericEntityProcessor(this.connect);
 
-      this.handler.register(lookupEntityCollectionProcessor);
-      this.handler.register(lookupEntityProcessor);
+      this.handler.register(entityCollectionProcessor);
+      this.handler.register(entityProcessor);
+
+      for (ResourceInfo resource: resources)
+      {
+         LOG.info( "Resource importing: " + resource.getResourceName() );
+         edmProvider.addDefinition(resource);
+
+         entityCollectionProcessor.addResource(resource, resource.getResourceName() );
+         entityProcessor.addResource(resource, resource.getResourceName() );
+      }
 
    }
 
