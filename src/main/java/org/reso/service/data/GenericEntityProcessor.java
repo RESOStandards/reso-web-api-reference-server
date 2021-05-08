@@ -136,18 +136,8 @@ public class GenericEntityProcessor implements EntityProcessor
          // add the lookups from the database.
          while (resultSet.next())
          {
+            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,null);
 
-            String lookupKey = resultSet.getString(primaryFieldName);
-            Entity ent = new Entity();
-            for (FieldInfo field : fields)
-            {
-               String fieldName = field.getFieldName();
-               Object value = CommonDataProcessing.getFieldValueFromRow(field,resultSet);
-
-               ent.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, value));
-            }
-
-            ent.setId(createId(resource.getResourcesName(), lookupKey));
             product = ent;
          }
 

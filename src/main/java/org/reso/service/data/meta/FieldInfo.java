@@ -77,4 +77,10 @@ public class FieldInfo
    {
       return maxLength;
    }
+
+
+   public boolean isCollection()
+   {
+      return false;
+   }
 }

@@ -24,6 +24,7 @@ import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -33,10 +34,17 @@ public class RESOservlet extends HttpServlet
 {
    private static final long   serialVersionUID = 1L;
    private static final Logger     LOG     = LoggerFactory.getLogger(RESOservlet.class);
-   private Connection connect = null;
+   private static Connection connect = null;
    private Validator  validator = null;
    private OData odata = null;
    ODataHttpHandler handler = null;
+
+   public static HashMap<String,ResourceInfo> resourceLookup = new HashMap<>();
+
+   public static Connection getConnection()
+   {
+      return connect;
+   }
 
 
    @Override public void init() throws ServletException
@@ -97,6 +105,7 @@ public class RESOservlet extends HttpServlet
                ctor.setAccessible(true);
                ResourceInfo resource = (ResourceInfo)ctor.newInstance();
                resources.add(resource);
+               resourceLookup.put(resource.getResourceName(), resource);
 
                resource.findPrimaryKey(this.connect);
             }

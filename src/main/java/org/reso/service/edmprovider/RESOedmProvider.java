@@ -1,12 +1,15 @@
 package org.reso.service.edmprovider;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.*;
+import org.reso.service.data.meta.EnumFieldInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 
@@ -15,7 +18,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 {
    private ArrayList<ResourceInfo> resourceList = new ArrayList<ResourceInfo>();
    // Service Namespace
-   public static final String NAMESPACE = "RESO.OData.Metadata";
+   public static final String NAMESPACE = "org.reso.metadata";
 
    // EDM Container
    public static final String CONTAINER_NAME = "Container";
@@ -53,7 +56,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          {
             String fieldName = field.getFieldName();
 
-            CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType());
+            CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType()).setCollection(field.isCollection());
             Integer maxLength = field.getMaxLength();
             if (null!=maxLength)
             {
@@ -157,11 +160,43 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       CsdlSchema schema = new CsdlSchema();
       schema.setNamespace(NAMESPACE);
 
+      CsdlSchema enumSchema = new CsdlSchema();
+      enumSchema.setNamespace(NAMESPACE+".enums");
+
       // add EntityTypes
       List<CsdlEntityType> entityTypes = new ArrayList<CsdlEntityType>();
 
       for (ResourceInfo defn :resourceList)
       {
+         ArrayList<FieldInfo> fields = defn.getFieldList();
+         for (FieldInfo field : fields)
+         {
+            if (field instanceof EnumFieldInfo)
+            {
+               EnumFieldInfo enumField = (EnumFieldInfo) field;
+
+               ArrayList<String> values = enumField.getValues();
+
+               if (null!=values && values.size()>0)
+               {
+                  CsdlEnumType type = new CsdlEnumType();
+                  ArrayList<CsdlEnumMember> csdlMembers = new ArrayList<>();
+
+                  for (String value: values)
+                  {
+                     csdlMembers.add(new CsdlEnumMember().setName(value));
+                  }
+
+                  type.setMembers(csdlMembers);
+                  type.setName(enumField.getLookupName());
+                  type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
+
+                  enumSchema.getEnumTypes().add(type);
+               }
+
+            }
+         }
+
          entityTypes.add(getEntityType(defn));
       }
 
@@ -173,6 +208,22 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       // finally
       List<CsdlSchema> schemas = new ArrayList<CsdlSchema>();
       schemas.add(schema);
+
+/**
+      // Example of how to create enum types.
+      CsdlEnumType type = new CsdlEnumType();
+      type.setMembers(Arrays.asList(
+               new CsdlEnumMember().setName("LOW"),
+               new CsdlEnumMember().setName("MEDIUM").setValue("1")
+      ));
+      type.setName("EnumTest");
+      type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
+
+      enumSchema.getEnumTypes().add(type);
+
+ /**/
+      schemas.add(enumSchema);
+
 
       return schemas;
    }

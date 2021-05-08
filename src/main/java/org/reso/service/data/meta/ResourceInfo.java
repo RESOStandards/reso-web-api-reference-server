@@ -66,10 +66,11 @@ public class ResourceInfo
 
       ResultSet pkColumns = connect.getMetaData().getPrimaryKeys(null, null, getTableName());
 
-      while(pkColumns.next()) {
+      while(pkColumns.next())
+      {
          String pkColumnName = pkColumns.getString("COLUMN_NAME");
          Integer pkPosition = pkColumns.getInt("KEY_SEQ");
-         LOG.info(""+pkColumnName+" is the "+pkPosition+". column of the primary key of the table "+tableName);
+         LOG.debug(""+pkColumnName+" is the "+pkPosition+". column of the primary key of the table "+tableName);
          primaryKey = pkColumnName;
       }
 

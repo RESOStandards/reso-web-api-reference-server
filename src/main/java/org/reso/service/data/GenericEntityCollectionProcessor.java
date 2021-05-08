@@ -269,20 +269,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          // add the lookups from the database.
          while (resultSet.next())
          {
-            String lookupKey = resultSet.getString(primaryFieldName);
-            Entity ent = new Entity();
-            for (FieldInfo field : fields)
-            {
-               String fieldName = field.getFieldName();
-               Object value = null;
-               if (selectLookup==null || selectLookup.containsKey(fieldName) )
-               {
-                  value = CommonDataProcessing.getFieldValueFromRow(field, resultSet);
-                  ent.addProperty(new Property(null, fieldName,ValueType.PRIMITIVE, value));
-               }
-            }
-
-            ent.setId(createId(resource.getResourcesName(), lookupKey));
+            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
             productList.add(ent);
          }
 
@@ -294,14 +281,6 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       }
 
       return entCollection;
-   }
-
-   private URI createId(String entitySetName, Object id) {
-      try {
-         return new URI(entitySetName + "('" + String.valueOf(id) + "')");
-      } catch (URISyntaxException e) {
-         throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
-      }
    }
 
 }
