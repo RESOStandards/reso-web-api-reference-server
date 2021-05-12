@@ -20,7 +20,7 @@ import static org.reso.service.servlet.RESOservlet.getConnection;
 public class EnumFieldInfo extends FieldInfo
 {
    private String lookupName;
-   private              ArrayList<String> values = new ArrayList<>();
+   private              ArrayList<EnumValueInfo> values = new ArrayList<>();
    private static final Logger            LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
    private boolean isCollection = false;
 
@@ -31,7 +31,7 @@ public class EnumFieldInfo extends FieldInfo
       super(fieldName, type);
    }
 
-   public void addValue(String value)
+   public void addValue(EnumValueInfo value)
    {
       values.add(value);
    }
@@ -57,7 +57,8 @@ public class EnumFieldInfo extends FieldInfo
             {
                Entity ent = CommonDataProcessing.getEntityFromRow(resultSet, resource, selectLookup);
                Property property = ent.getProperty(LOOKUP_COLUMN_NAME);
-               values.add( property.getValue().toString() );
+               String val = property.getValue().toString();
+               values.add( new EnumValueInfo(val) );
             }
          }
          catch (Exception e)
@@ -68,7 +69,7 @@ public class EnumFieldInfo extends FieldInfo
       }
    }
 
-   public ArrayList<String> getValues()
+   public ArrayList<EnumValueInfo> getValues()
    {
       if (values.size()==0)
       {

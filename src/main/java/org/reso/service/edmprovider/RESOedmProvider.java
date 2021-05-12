@@ -3,15 +3,13 @@ import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.*;
 import org.reso.service.data.meta.EnumFieldInfo;
+import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
+import java.util.*;
 
 
 public class RESOedmProvider extends CsdlAbstractEdmProvider
@@ -166,6 +164,8 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       // add EntityTypes
       List<CsdlEntityType> entityTypes = new ArrayList<CsdlEntityType>();
 
+      HashMap<String, Boolean> enumList = new HashMap<>();
+
       for (ResourceInfo defn :resourceList)
       {
          ArrayList<FieldInfo> fields = defn.getFieldList();
@@ -174,24 +174,32 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
             if (field instanceof EnumFieldInfo)
             {
                EnumFieldInfo enumField = (EnumFieldInfo) field;
+               
+               String enumName = enumField.getLookupName();
 
-               ArrayList<String> values = enumField.getValues();
-
-               if (null!=values && values.size()>0)
+               if (!enumList.containsKey(enumName))
                {
-                  CsdlEnumType type = new CsdlEnumType();
-                  ArrayList<CsdlEnumMember> csdlMembers = new ArrayList<>();
+                  enumList.put(enumName, true);
+                  ArrayList<EnumValueInfo> values = enumField.getValues();
 
-                  for (String value: values)
+                  if (null!=values && values.size()>0)
                   {
-                     csdlMembers.add(new CsdlEnumMember().setName(value));
+                     CsdlEnumType type = new CsdlEnumType();
+                     ArrayList<CsdlEnumMember> csdlMembers = new ArrayList<>();
+
+                     for (EnumValueInfo value: values)
+                     {
+                        CsdlEnumMember member = new CsdlEnumMember().setName(value.getValue());
+                        member.setAnnotations(value.getAnnotations());
+                        csdlMembers.add(member);
+                     }
+
+                     type.setMembers(csdlMembers);
+                     type.setName(enumName);
+                     type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
+
+                     enumSchema.getEnumTypes().add(type);
                   }
-
-                  type.setMembers(csdlMembers);
-                  type.setName(enumField.getLookupName());
-                  type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
-
-                  enumSchema.getEnumTypes().add(type);
                }
 
             }
