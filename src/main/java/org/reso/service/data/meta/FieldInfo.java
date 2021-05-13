@@ -15,6 +15,8 @@ public class FieldInfo
    private String       fieldName            = null;
    private FullQualifiedName    type         = null;
    private Integer maxLength                 = null;
+   private Integer precision                 = null;
+   private Integer scale                     = null;
 
    private ArrayList<CsdlAnnotation> annotations = null;
 
@@ -73,9 +75,44 @@ public class FieldInfo
       this.maxLength = maxLength;
    }
 
+
+   /**
+    * Set the Decimal Precision.
+    *
+    * @param precision The value to set the attribute to.
+    */
+   public void setPrecision(Integer precision)
+   {
+      this.precision = precision;
+   }
+
+
+   /**
+    * Set the Decimal Scale.
+    *
+    * @param scale The value to set the attribute to.
+    */
+   public void setScale(Integer scale)
+   {
+      this.scale = scale;
+   }
+
+
    public Integer getMaxLength()
    {
       return maxLength;
+   }
+
+
+   public Integer getPrecision()
+   {
+      return precision;
+   }
+
+
+   public Integer getScale()
+   {
+      return scale;
    }
 
 

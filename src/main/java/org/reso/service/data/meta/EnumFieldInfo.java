@@ -73,7 +73,8 @@ public class EnumFieldInfo extends FieldInfo
    {
       if (values.size()==0)
       {
-         loadValues();
+         EnumValueInfo sampleValue = new EnumValueInfo("Sample"+lookupName+"EnumValue");
+         values.add(sampleValue);
       }
 
       return values;
@@ -85,14 +86,13 @@ public class EnumFieldInfo extends FieldInfo
    {
       if (values.size()==0)
       {
-         loadValues();
+         getValues();
       }
       if (values.size()>0)
       {
          return new FullQualifiedName("org.reso.metadata.enums." + lookupName);
       }
 
-      LOG.info("No values for lookup: "+lookupName);
       return super.getType();
    }
 

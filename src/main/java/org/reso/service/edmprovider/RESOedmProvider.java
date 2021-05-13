@@ -61,6 +61,18 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
                property.setMaxLength(maxLength);
             }
 
+            Integer precision = field.getPrecision();
+            if (null!=precision)
+            {
+               property.setPrecision(precision);
+            }
+
+            Integer scale = field.getScale();
+            if (null!=scale)
+            {
+               property.setScale(scale);
+            }
+
             ArrayList<CsdlAnnotation> annotations = field.getAnnotations();
             if (annotations!=null)
             {
@@ -162,7 +174,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       enumSchema.setNamespace(NAMESPACE+".enums");
 
       // add EntityTypes
-      List<CsdlEntityType> entityTypes = new ArrayList<CsdlEntityType>();
+      List<CsdlEntityType> entityTypes = new ArrayList<>();
 
       HashMap<String, Boolean> enumList = new HashMap<>();
 
@@ -214,24 +226,10 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       schema.setEntityContainer(getEntityContainer());
 
       // finally
-      List<CsdlSchema> schemas = new ArrayList<CsdlSchema>();
+      List<CsdlSchema> schemas = new ArrayList<>();
       schemas.add(schema);
 
-/**
-      // Example of how to create enum types.
-      CsdlEnumType type = new CsdlEnumType();
-      type.setMembers(Arrays.asList(
-               new CsdlEnumMember().setName("LOW"),
-               new CsdlEnumMember().setName("MEDIUM").setValue("1")
-      ));
-      type.setName("EnumTest");
-      type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
-
-      enumSchema.getEnumTypes().add(type);
-
- /**/
       schemas.add(enumSchema);
-
 
       return schemas;
    }
