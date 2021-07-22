@@ -41,6 +41,10 @@ public class FieldInfo
 
    public String getFieldName()
    {
+      return fieldName.toLowerCase();
+   }
+   public String getODATAFieldName()
+   {
       return fieldName;
    }
 

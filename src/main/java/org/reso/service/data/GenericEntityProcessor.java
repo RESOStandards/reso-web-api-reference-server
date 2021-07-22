@@ -103,7 +103,7 @@ public class GenericEntityProcessor implements EntityProcessor
          for (final UriParameter key : keyPredicates)
          {
             // key
-            String keyName = key.getName();
+            String keyName = key.getName().toLowerCase();
             String keyValue = key.getText();
             if (sqlCriteria==null)
             {
@@ -122,7 +122,7 @@ public class GenericEntityProcessor implements EntityProcessor
             queryString = queryString + " WHERE " + sqlCriteria;
          }
 
-         LOG.debug("SQL Query: "+queryString);
+         LOG.info("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 
          String primaryFieldName = resource.getPrimaryKeyName();

@@ -60,6 +60,17 @@ public class PostgreSQLFilterExpressionVisitor implements ExpressionVisitor<Stri
       return left + strOperator + right;
    }
 
+   // @TODO I'm unsure where this would be called.
+   @Override public String visitBinaryOperator(BinaryOperatorKind operator, String s, List<String> list)
+            throws ExpressionVisitException, ODataApplicationException
+   {
+      String strOperator = BINARY_OPERATORS.get(operator);
+      throw new ODataApplicationException("Unsupported binary operation: " + operator.name(),
+                                          operator == BinaryOperatorKind.HAS ?
+                                                   HttpStatusCode.NOT_IMPLEMENTED.getStatusCode() :
+                                                   HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
+   }
+
    @Override
    public String visitUnaryOperator(UnaryOperatorKind operator, String operand)
             throws ExpressionVisitException, ODataApplicationException {

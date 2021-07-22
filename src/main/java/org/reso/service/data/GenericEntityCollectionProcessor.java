@@ -251,7 +251,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                if (uriResource instanceof UriResourcePrimitiveProperty)
                {
                   EdmProperty edmProperty = ((UriResourcePrimitiveProperty) uriResource).getProperty();
-                  final String sortPropertyName = edmProperty.getName();
+                  final String sortPropertyName = edmProperty.getName().toLowerCase();
                   queryString = queryString + " ORDER BY "+sortPropertyName;
                   if(orderByItem.isDescending())
                   {
@@ -260,7 +260,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                }
             }
          }
-         LOG.debug("SQL Query: "+queryString);
+         LOG.info("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 
          // special return logic for $count

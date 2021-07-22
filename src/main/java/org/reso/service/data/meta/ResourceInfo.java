@@ -71,12 +71,20 @@ public class ResourceInfo
          String pkColumnName = pkColumns.getString("COLUMN_NAME");
          Integer pkPosition = pkColumns.getInt("KEY_SEQ");
          LOG.debug(""+pkColumnName+" is the "+pkPosition+". column of the primary key of the table "+tableName);
-         primaryKey = pkColumnName;
+         primaryKey = pkColumnName.toLowerCase();
       }
 
-      String[] splitKey = primaryKey.split("Numeric");
+      String[] splitKey = primaryKey.split("numeric");
       if (splitKey.length>=1)
          primaryKey = splitKey[0];
+
+      ArrayList<FieldInfo> fields = this.getFieldList();
+      for (FieldInfo field : fields)
+      {
+         String fieldName = field.getFieldName();
+         if (primaryKey.equals(fieldName))
+            primaryKey = field.getODATAFieldName();
+      }
 
 
       this.primaryKeyName = primaryKey;

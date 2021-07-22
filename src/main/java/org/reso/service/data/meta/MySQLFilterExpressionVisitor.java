@@ -23,7 +23,8 @@ import java.util.*;
 /**
  * $filter
  */
-public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String> {
+public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String>
+{
    private static final Logger                          LOG              = LoggerFactory.getLogger(MySQLFilterExpressionVisitor.class);
    private static final Map<BinaryOperatorKind, String> BINARY_OPERATORS = new HashMap<BinaryOperatorKind, String>() {{
       put(BinaryOperatorKind.ADD, " + ");
@@ -61,6 +62,17 @@ public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String> {
                                                       HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
       }
       return left + strOperator + right;
+   }
+
+   // @TODO I'm unsure where this would be called.
+   @Override public String visitBinaryOperator(BinaryOperatorKind operator, String s, List<String> list)
+            throws ExpressionVisitException, ODataApplicationException
+   {
+      String strOperator = BINARY_OPERATORS.get(operator);
+      throw new ODataApplicationException("Unsupported binary operation: " + operator.name(),
+                                          operator == BinaryOperatorKind.HAS ?
+                                                   HttpStatusCode.NOT_IMPLEMENTED.getStatusCode() :
+                                                   HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
    }
 
    @Override

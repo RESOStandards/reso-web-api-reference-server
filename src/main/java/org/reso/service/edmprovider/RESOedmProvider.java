@@ -61,7 +61,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
          for (FieldInfo field : fields) if (field.isComplex())
          {
-            String fieldName = field.getFieldName();
+            String fieldName = field.getODATAFieldName();
 
             CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType()).setCollection(field.isCollection());
             Integer maxLength = field.getMaxLength();
@@ -124,7 +124,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
          for (FieldInfo field : fields) if (!field.isComplex())
          {
-            String fieldName = field.getFieldName();
+            String fieldName = field.getODATAFieldName();
 
             CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType()).setCollection(field.isCollection());
             Integer maxLength = field.getMaxLength();

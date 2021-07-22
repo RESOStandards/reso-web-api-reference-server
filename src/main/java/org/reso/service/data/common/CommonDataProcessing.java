@@ -1,13 +1,11 @@
 package org.reso.service.data.common;
 
 
-import org.apache.olingo.commons.api.data.ComplexValue;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
-import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 import org.slf4j.Logger;
@@ -15,12 +13,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 
 public class CommonDataProcessing
 {
@@ -38,7 +34,7 @@ public class CommonDataProcessing
       {
          value = resultSet.getTimestamp(fieldName);
       }
-      else if (field.getFieldName().equals("EnumTest"))  // @TEST CODE
+      else if (field.getODATAFieldName().equals("EnumTest"))  // @TEST CODE
       {
          ArrayList<Integer> responses = new ArrayList();
          responses.add(1);
@@ -65,7 +61,7 @@ public class CommonDataProcessing
       Entity ent = new Entity();
       for (FieldInfo field : fields)
       {
-         String fieldName = field.getFieldName();
+         String fieldName = field.getODATAFieldName();
          Object value = null;
          if (selectLookup==null || selectLookup.containsKey(fieldName) )
          {
