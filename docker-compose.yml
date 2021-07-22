@@ -13,6 +13,8 @@ services:
       - SQL_HOST
       - SQL_USER
       - SQL_PASSWORD
+      - SQL_CONNECTION_STR
+      - SQL_DB_DRIVER
     volumes:
       - ./target:/usr/local/tomcat/webapps
 #    depends_on:

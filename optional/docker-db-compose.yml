@@ -11,8 +11,6 @@ services:
       MYSQL_ROOT_HOST: '%'
     volumes:
       - ./sql:/docker-entrypoint-initdb.d
-
-
     ports:
       - "6033:3306"
     healthcheck:

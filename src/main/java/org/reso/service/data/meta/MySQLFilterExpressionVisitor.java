@@ -18,16 +18,13 @@ import org.apache.olingo.server.api.uri.queryoption.expression.UnaryOperatorKind
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.text.SimpleDateFormat;
-import java.time.format.DateTimeFormatter;
-import java.time.temporal.TemporalAccessor;
 import java.util.*;
 
 /**
  * $filter
  */
-public class FilterExpressionVisitor implements ExpressionVisitor<String> {
-   private static final Logger                          LOG              = LoggerFactory.getLogger(FilterExpressionVisitor.class);
+public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String> {
+   private static final Logger                          LOG              = LoggerFactory.getLogger(MySQLFilterExpressionVisitor.class);
    private static final Map<BinaryOperatorKind, String> BINARY_OPERATORS = new HashMap<BinaryOperatorKind, String>() {{
       put(BinaryOperatorKind.ADD, " + ");
       put(BinaryOperatorKind.AND, " AND ");
@@ -47,7 +44,7 @@ public class FilterExpressionVisitor implements ExpressionVisitor<String> {
    private String entityAlias;
    private ResourceInfo resourceInfo;
 
-   public FilterExpressionVisitor(ResourceInfo resourceInfo) {
+   public MySQLFilterExpressionVisitor(ResourceInfo resourceInfo) {
       this.entityAlias = resourceInfo.getTableName();
       this.resourceInfo = resourceInfo;
    }

@@ -120,4 +120,14 @@ public class FieldInfo
    {
       return false;
    }
+
+   public boolean isFlags()
+   {
+      return false;
+   }
+
+   public boolean isComplex()
+   {
+      return false;
+   }
 }

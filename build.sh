@@ -23,6 +23,11 @@ then
   fi
 
   java -jar temp/web-api-commander.jar --generateReferenceDDL --useKeyNumeric > sql/reso-reference-ddl-dd-1.7.numeric-keys.sql
+
+  # The following lines should be independent of the SQL logic.
+  java -jar temp/web-api-commander.jar --generateResourceInfoModels
+  mv ResourceInfoModels/* src/main/java/org/reso/service/data/definition/
+
 else
   COMPOSE_FILE="docker-compose.yml"
 fi

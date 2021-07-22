@@ -34,6 +34,12 @@
         </dependency>
 
         <dependency>
+            <groupId>org.postgresql</groupId>
+            <artifactId>postgresql</artifactId>
+            <version>42.2.23</version>
+        </dependency>
+
+        <dependency>
             <groupId>org.apache.olingo</groupId>
             <artifactId>odata-server-api</artifactId>
             <version>${odata.version}</version>

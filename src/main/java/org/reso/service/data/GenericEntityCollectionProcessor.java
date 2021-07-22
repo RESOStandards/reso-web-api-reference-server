@@ -4,9 +4,7 @@ package org.reso.service.data;
 import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.EdmProperty;
-import org.apache.olingo.commons.api.ex.ODataRuntimeException;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
@@ -22,14 +20,13 @@ import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
 import org.apache.olingo.server.api.uri.queryoption.expression.Member;
 import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.data.meta.FieldInfo;
-import org.reso.service.data.meta.FilterExpressionVisitor;
+import org.reso.service.data.meta.MySQLFilterExpressionVisitor;
+import org.reso.service.data.meta.PostgreSQLFilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.*;
 
@@ -38,6 +35,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    private              OData                odata;
    private              ServiceMetadata      serviceMetadata;
    private              Connection           connect           = null;
+   private              String               dbType;
    HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
 
@@ -45,10 +43,11 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
     * If you use this constructor, make sure to set your resourceInfo
     * @param connection
     */
-   public GenericEntityCollectionProcessor(Connection connection)
+   public GenericEntityCollectionProcessor(Connection connection, String dbType)
    {
       this.resourceList = new HashMap<>();
       this.connect = connection;
+      this.dbType = dbType;
    }
 
    public void init(OData odata, ServiceMetadata serviceMetadata) {
@@ -157,7 +156,14 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          String sqlCriteria = null;
          if (filter!=null)
          {
-            sqlCriteria = filter.getExpression().accept(new FilterExpressionVisitor(resource));
+            if (this.dbType.equals("mysql"))
+            {
+               sqlCriteria = filter.getExpression().accept(new MySQLFilterExpressionVisitor(resource));
+            }
+            else if (this.dbType.equals("postgres"))
+            {
+               sqlCriteria = filter.getExpression().accept(new PostgreSQLFilterExpressionVisitor(resource));
+            }
          }
          HashMap<String,Boolean> selectLookup = null;
 

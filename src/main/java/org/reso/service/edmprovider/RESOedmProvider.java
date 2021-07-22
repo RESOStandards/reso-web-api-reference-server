@@ -2,6 +2,7 @@ package org.reso.service.edmprovider;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
 import org.apache.olingo.commons.api.edm.provider.*;
+import org.apache.olingo.commons.api.ex.ODataException;
 import org.reso.service.data.meta.EnumFieldInfo;
 import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
@@ -24,6 +25,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
    private static final Logger LOG = LoggerFactory.getLogger(RESOedmProvider.class);
 
+   @Override
    public CsdlEntityType getEntityType(FullQualifiedName entityTypeName)
    {
       for (ResourceInfo defn :resourceList)
@@ -36,21 +38,28 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       return null;
    }
 
-   public CsdlEntityType getEntityType(ResourceInfo defn)
+   @Override
+   public CsdlComplexType getComplexType(FullQualifiedName complexTypeName) throws ODataException
+   {
+      for (ResourceInfo defn :resourceList)
+      {
+         if (complexTypeName.equals(defn.getFqn(NAMESPACE)))
+         {
+            return getComplexType(defn);
+         }
+      }
+      return null;
+   }
+
+   public CsdlComplexType getComplexType(ResourceInfo defn)
    {
       try
       {
          ArrayList<FieldInfo> fields = defn.getFieldList();
-         String primaryFieldName = defn.getPrimaryKeyName();
 
          ArrayList<CsdlProperty> propertyList = new ArrayList<>();
 
-         // create CsdlPropertyRef for Key element
-         CsdlPropertyRef propertyRef = new CsdlPropertyRef();
-         propertyRef.setName(primaryFieldName);
-         LOG.debug("Primary key is: "+primaryFieldName);
-
-         for (FieldInfo field : fields)
+         for (FieldInfo field : fields) if (field.isComplex())
          {
             String fieldName = field.getFieldName();
 
@@ -77,6 +86,74 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
             if (annotations!=null)
             {
                property.setAnnotations(annotations);
+            }
+
+            propertyList.add(property);
+         }
+
+         CsdlComplexType complexType = new CsdlComplexType();
+         complexType.setName(defn.getResourceName());
+         complexType.setProperties(propertyList);
+
+         return complexType;
+
+      } catch (Exception e)
+      {
+         if (defn==null)
+            LOG.error("Null Resource definition provided.", e);
+         else
+            LOG.error("Server Error occurred in reading "+defn.getResourceName(), e);
+      }
+
+      return null;
+   }
+
+   public CsdlEntityType getEntityType(ResourceInfo defn)
+   {
+      try
+      {
+         ArrayList<FieldInfo> fields = defn.getFieldList();
+         String primaryFieldName = defn.getPrimaryKeyName();
+
+         ArrayList<CsdlProperty> propertyList = new ArrayList<>();
+
+         // create CsdlPropertyRef for Key element
+         CsdlPropertyRef propertyRef = new CsdlPropertyRef();
+         propertyRef.setName(primaryFieldName);
+         LOG.debug("Primary key is: "+primaryFieldName);
+
+         for (FieldInfo field : fields) if (!field.isComplex())
+         {
+            String fieldName = field.getFieldName();
+
+            CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType()).setCollection(field.isCollection());
+            Integer maxLength = field.getMaxLength();
+            if (null!=maxLength)
+            {
+               property.setMaxLength(maxLength);
+            }
+
+            Integer precision = field.getPrecision();
+            if (null!=precision)
+            {
+               property.setPrecision(precision);
+            }
+
+            Integer scale = field.getScale();
+            if (null!=scale)
+            {
+               property.setScale(scale);
+            }
+
+            ArrayList<CsdlAnnotation> annotations = field.getAnnotations();
+            if (annotations!=null)
+            {
+               property.setAnnotations(annotations);
+            }
+
+            if (field.isCollection())
+            {
+               property.setCollection(true);
             }
 
             propertyList.add(property);
@@ -175,6 +252,8 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
       // add EntityTypes
       List<CsdlEntityType> entityTypes = new ArrayList<>();
+      List<CsdlComplexType> complexTypes = new ArrayList<>();
+
 
       HashMap<String, Boolean> enumList = new HashMap<>();
 
@@ -199,15 +278,19 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
                      CsdlEnumType type = new CsdlEnumType();
                      ArrayList<CsdlEnumMember> csdlMembers = new ArrayList<>();
 
+                     int bitValue = 1;
+
                      for (EnumValueInfo value: values)
                      {
-                        CsdlEnumMember member = new CsdlEnumMember().setName(value.getValue());
+                        CsdlEnumMember member = new CsdlEnumMember().setName(value.getValue()).setValue(""+bitValue);
                         member.setAnnotations(value.getAnnotations());
                         csdlMembers.add(member);
+                        bitValue = bitValue*2;
                      }
 
                      type.setMembers(csdlMembers);
                      type.setName(enumName);
+                     type.setFlags(enumField.isFlags());
                      type.setUnderlyingType(EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
 
                      enumSchema.getEnumTypes().add(type);
@@ -218,9 +301,11 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          }
 
          entityTypes.add(getEntityType(defn));
+         complexTypes.add(getComplexType(defn));
       }
 
       schema.setEntityTypes(entityTypes);
+      //schema.setComplexTypes(complexTypes);
 
       // add EntityContainer
       schema.setEntityContainer(getEntityContainer());

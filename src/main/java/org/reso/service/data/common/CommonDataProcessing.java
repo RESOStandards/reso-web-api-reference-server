@@ -1,6 +1,7 @@
 package org.reso.service.data.common;
 
 
+import org.apache.olingo.commons.api.data.ComplexValue;
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
@@ -19,6 +20,7 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 
 public class CommonDataProcessing
 {
@@ -35,6 +37,13 @@ public class CommonDataProcessing
       else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
       {
          value = resultSet.getTimestamp(fieldName);
+      }
+      else if (field.getFieldName().equals("EnumTest"))  // @TEST CODE
+      {
+         ArrayList<Integer> responses = new ArrayList();
+         responses.add(1);
+         responses.add(2);
+         value = 3;
       }
       else
       {
@@ -61,7 +70,15 @@ public class CommonDataProcessing
          if (selectLookup==null || selectLookup.containsKey(fieldName) )
          {
             value = CommonDataProcessing.getFieldValueFromRow(field, resultSet);
-            ent.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, value));
+            if (field.isCollection())
+            {
+               Property property = new Property(null, fieldName, ValueType.ENUM, value);
+               ent.addProperty(property);
+            }
+            else
+            {
+               ent.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, value));
+            }
          }
       }
 

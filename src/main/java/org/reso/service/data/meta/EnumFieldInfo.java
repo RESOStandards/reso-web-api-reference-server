@@ -23,6 +23,7 @@ public class EnumFieldInfo extends FieldInfo
    private              ArrayList<EnumValueInfo> values = new ArrayList<>();
    private static final Logger            LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
    private boolean isCollection = false;
+   private boolean isFlags = false;
 
    private static String LOOKUP_COLUMN_NAME = "LookupValue";
 
@@ -114,6 +115,16 @@ public class EnumFieldInfo extends FieldInfo
    public void setCollection()
    {
       isCollection = true;
+   }
+
+   public void setFlags()
+   {
+      isFlags = true;
+   }
+
+   public boolean isFlags()
+   {
+      return isFlags;
    }
 
 }

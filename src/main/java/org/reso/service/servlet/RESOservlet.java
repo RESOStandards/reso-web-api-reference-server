@@ -25,6 +25,7 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
@@ -35,6 +36,7 @@ public class RESOservlet extends HttpServlet
    private static final long   serialVersionUID = 1L;
    private static final Logger     LOG     = LoggerFactory.getLogger(RESOservlet.class);
    private static Connection connect = null;
+   private String dbType;
    private Validator  validator = null;
    private OData odata = null;
    ODataHttpHandler handler = null;
@@ -63,22 +65,49 @@ public class RESOservlet extends HttpServlet
 //      this.validator.addProvider(new BasicAuthProvider());  // We're using this for the token auth.  Only use here for easy browser testing.
       this.validator.addProvider(new BearerAuthProvider());
 
-      String mysqlHost = env.get("SQL_HOST");
-      String mysqlUser = env.get("SQL_USER");
-      String mysqlPwd = env.get("SQL_PASSWORD");
+      String dbHost = env.get("SQL_HOST");
+      String dbUser = env.get("SQL_USER");
+      String dbPwd = env.get("SQL_PASSWORD");
+      String dbConnString = env.get("SQL_CONNECTION_STR");
+      String dbDriverStr = env.get("SQL_DB_DRIVER");
+
+      if (dbConnString!=null)
+      {
+         String[] dbConnSplitStr = dbConnString.split(":");
+         if (dbConnSplitStr.length>1)
+         {
+            this.dbType = dbConnSplitStr[1].toLowerCase();  // should be of the form "jdbc","mysql","//192.168.1.71/reso_data_dictionary_1_7..."
+            LOG.info("DB Type: "+this.dbType);
+         }
+         else LOG.info("DB String unknown form: "+dbConnString);
+      }
+      LOG.info("DB String empty");
 
       try {
-         Class.forName("com.mysql.cj.jdbc.Driver").newInstance();
+         Class.forName(dbDriverStr).newInstance();
+         LOG.debug("looking to connect to " + dbConnString);
 
-         LOG.info("looking to connect to jdbc:mysql://"+mysqlHost+"/reso_data_dictionary_1_7");
+         if (this.dbType.equals("mysql"))
+         {
 
-         connect = DriverManager
-                  .getConnection("jdbc:mysql://"+mysqlHost+"/reso_data_dictionary_1_7?autoReconnect=true&maxReconnects=4&"
-                                 + "user="+mysqlUser+"&password="+mysqlPwd);
+            connect = DriverManager
+                     .getConnection(dbConnString);
+         }
+         else if (this.dbType.equals("postgresql"))
+         {
+            connect = DriverManager
+                     .getConnection(dbConnString,dbUser,dbPwd);
+         }
 
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in connecting to the database", e);
+      }
+
+      if (connect != null) {
+         LOG.info("Connected to the database!");
+      } else {
+         LOG.error("Failed to make connection!");
       }
 
       // Set up ODATA
@@ -123,7 +152,7 @@ public class RESOservlet extends HttpServlet
       // create odata handler and configure it with CsdlEdmProvider and Processor
       this.handler = odata.createHandler(edm);
 
-      GenericEntityCollectionProcessor entityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect);
+      GenericEntityCollectionProcessor entityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect, dbType);
       GenericEntityProcessor entityProcessor = new GenericEntityProcessor(this.connect);
 
       this.handler.register(entityCollectionProcessor);
