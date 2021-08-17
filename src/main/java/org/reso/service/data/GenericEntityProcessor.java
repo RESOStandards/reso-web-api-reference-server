@@ -65,7 +65,15 @@ public class GenericEntityProcessor implements EntityProcessor
 
       // 2. retrieve the data from backend
       List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
-      Entity entity = getData(edmEntitySet, keyPredicates, resource);
+      Entity entity;
+      if (resource.useCustomDatasource() )
+      {
+         entity = resource.getData(edmEntitySet, keyPredicates);
+      }
+      else
+      {
+         entity = getData(edmEntitySet, keyPredicates, resource);
+      }
 
       // 3. serialize
       EdmEntityType entityType = edmEntitySet.getEntityType();

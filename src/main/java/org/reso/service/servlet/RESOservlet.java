@@ -9,6 +9,7 @@ import org.apache.olingo.server.api.ServiceMetadata;
 import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.GenericEntityProcessor;
 import org.reso.service.data.definition.LookupDefinition;
+import org.reso.service.data.definition.custom.FieldDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
 import org.reso.service.security.providers.BasicAuthProvider;
@@ -81,23 +82,13 @@ public class RESOservlet extends HttpServlet
          }
          else LOG.info("DB String unknown form: "+dbConnString);
       }
-      LOG.info("DB String empty");
 
       try {
          Class.forName(dbDriverStr).newInstance();
          LOG.debug("looking to connect to " + dbConnString);
 
-         if (this.dbType.equals("mysql"))
-         {
-
-            connect = DriverManager
-                     .getConnection(dbConnString);
-         }
-         else if (this.dbType.equals("postgresql"))
-         {
-            connect = DriverManager
-                     .getConnection(dbConnString,dbUser,dbPwd);
-         }
+         connect = DriverManager
+                  .getConnection(dbConnString,dbUser,dbPwd);
 
 
       } catch (Exception e) {
@@ -116,6 +107,11 @@ public class RESOservlet extends HttpServlet
 
       ArrayList<ResourceInfo> resources = new ArrayList<>();
 
+      // We are going to use a custom field definition to query Fields
+      FieldDefinition fieldDefinition = new FieldDefinition();
+      resources.add(fieldDefinition);
+      fieldDefinition.addResources(resources);
+
       // Get all classes with constructors with 0 parameters.  LookupDefinition should not work.
       try
       {
@@ -133,10 +129,17 @@ public class RESOservlet extends HttpServlet
             {
                ctor.setAccessible(true);
                ResourceInfo resource = (ResourceInfo)ctor.newInstance();
-               resources.add(resource);
-               resourceLookup.put(resource.getResourceName(), resource);
 
-               resource.findPrimaryKey(this.connect);
+               try
+               {
+                  resource.findPrimaryKey(this.connect);
+                  resources.add(resource);
+                  resourceLookup.put(resource.getResourceName(), resource);
+               }
+               catch (Exception e)
+               {
+                  LOG.error("Error with: "+resource.getResourceName()+" - "+e.getMessage());
+               }
             }
          }
       }

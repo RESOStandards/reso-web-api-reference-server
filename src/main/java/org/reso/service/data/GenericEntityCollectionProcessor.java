@@ -85,7 +85,16 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
       // 2nd: fetch the data from backend for this requested EntitySetName
       // it has to be delivered as EntitySet object
-      EntityCollection entitySet = getData(edmEntitySet, uriInfo, isCount, resource);
+      EntityCollection entitySet;
+
+      if (resource.useCustomDatasource() )
+      {
+         entitySet = resource.getData(edmEntitySet, uriInfo, isCount);
+      }
+      else
+      {
+         entitySet = getData(edmEntitySet, uriInfo, isCount, resource);
+      }
 
       // 3rd: create a serializer based on the requested format (json)
       try
