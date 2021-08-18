@@ -41,7 +41,8 @@ public class FieldInfo
 
    public String getFieldName()
    {
-      return fieldName.toLowerCase();
+      return fieldName;
+      //return fieldName.toLowerCase();  // For PostgreSQL.  Not currently supported, but here if you want to play with it.
    }
    public String getODATAFieldName()
    {

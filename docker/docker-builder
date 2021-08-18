@@ -1,0 +1,7 @@
+FROM ubuntu:20.10
+
+WORKDIR /usr/src/app
+
+RUN apt-get update && apt-get install -y wget curl pip maven docker-compose
+
+CMD ./docker/scripts/build.sh

@@ -2,9 +2,14 @@ package org.reso.service.data.meta;
 
 
 import org.apache.olingo.commons.api.data.Entity;
+import org.apache.olingo.commons.api.data.EntityCollection;
 import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
+import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.olingo.server.api.ODataApplicationException;
+import org.apache.olingo.server.api.uri.UriInfo;
+import org.apache.olingo.server.api.uri.UriParameter;
 import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.servlet.RESOservlet;
 import org.slf4j.Logger;
@@ -12,6 +17,7 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.*;
 import java.util.ArrayList;
+import java.util.List;
 
 public class ResourceInfo
 {
@@ -52,6 +58,8 @@ public class ResourceInfo
       return null;
    }
 
+   public Boolean useCustomDatasource() { return false; }
+
    public FullQualifiedName getFqn(String namespace)
    {
       if (this.fqn==null)
@@ -71,10 +79,10 @@ public class ResourceInfo
          String pkColumnName = pkColumns.getString("COLUMN_NAME");
          Integer pkPosition = pkColumns.getInt("KEY_SEQ");
          LOG.debug(""+pkColumnName+" is the "+pkPosition+". column of the primary key of the table "+tableName);
-         primaryKey = pkColumnName.toLowerCase();
+         primaryKey = pkColumnName; //.toLowerCase();  // lowercase only needed for PostgreSQL
       }
 
-      String[] splitKey = primaryKey.split("numeric");
+      String[] splitKey = primaryKey.split("Numeric");
       if (splitKey.length>=1)
          primaryKey = splitKey[0];
 
@@ -90,4 +98,14 @@ public class ResourceInfo
       this.primaryKeyName = primaryKey;
    }
 
+
+   public Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates)
+   {
+      return null;
+   }
+
+   public EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException
+   {
+      return null;
+   }
 }
