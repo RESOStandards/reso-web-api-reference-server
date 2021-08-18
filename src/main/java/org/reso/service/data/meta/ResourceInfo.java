@@ -79,10 +79,10 @@ public class ResourceInfo
          String pkColumnName = pkColumns.getString("COLUMN_NAME");
          Integer pkPosition = pkColumns.getInt("KEY_SEQ");
          LOG.debug(""+pkColumnName+" is the "+pkPosition+". column of the primary key of the table "+tableName);
-         primaryKey = pkColumnName.toLowerCase();
+         primaryKey = pkColumnName; //.toLowerCase();  // lowercase only needed for PostgreSQL
       }
 
-      String[] splitKey = primaryKey.split("numeric");
+      String[] splitKey = primaryKey.split("Numeric");
       if (splitKey.length>=1)
          primaryKey = splitKey[0];
 

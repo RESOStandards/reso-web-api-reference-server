@@ -9,10 +9,10 @@ import org.apache.olingo.server.api.ServiceMetadata;
 import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.GenericEntityProcessor;
 import org.reso.service.data.definition.LookupDefinition;
-import org.reso.service.data.definition.custom.FieldDefinition;
+import org.reso.service.data.meta.DefinitionBuilder;
+import org.reso.service.data.definition.FieldDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
-import org.reso.service.security.providers.BasicAuthProvider;
 import org.reso.service.security.Validator;
 import org.reso.service.security.providers.BearerAuthProvider;
 import org.reso.service.servlet.util.ClassLoader;
@@ -24,10 +24,8 @@ import java.io.*;
 import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DriverManager;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.Locale;
-import java.util.Map;
+import java.sql.SQLException;
+import java.util.*;
 import javax.servlet.ServletException;
 import javax.servlet.http.*;
 
@@ -72,6 +70,9 @@ public class RESOservlet extends HttpServlet
       String dbConnString = env.get("SQL_CONNECTION_STR");
       String dbDriverStr = env.get("SQL_DB_DRIVER");
 
+
+      String definitionFile = env.get("CERT_REPORT_FILENAME");
+
       if (dbConnString!=null)
       {
          String[] dbConnSplitStr = dbConnString.split(":");
@@ -111,11 +112,21 @@ public class RESOservlet extends HttpServlet
       FieldDefinition fieldDefinition = new FieldDefinition();
       resources.add(fieldDefinition);
       fieldDefinition.addResources(resources);
+      resourceLookup.put(fieldDefinition.getResourceName(), fieldDefinition);
+
+
+      // If there is a Certification metadata report file, import it for class definitions.
+
+      if (definitionFile!=null && false)
+      {
+         DefinitionBuilder definitionBuilder = new DefinitionBuilder(definitionFile);
+         List<ResourceInfo> loadedResources = definitionBuilder.readResources();
+      }
 
       // Get all classes with constructors with 0 parameters.  LookupDefinition should not work.
       try
       {
-         Class[] classList = ClassLoader.getClasses("org.reso.service.data.definition");
+         Class[] classList = ClassLoader.getClasses("org.reso.service.data.definition.custom");
          for (Class classProto: classList)
          {
             Constructor ctor = null;
@@ -148,7 +159,17 @@ public class RESOservlet extends HttpServlet
          LOG.error(e.getMessage());
       }
 
-//      ResourceInfo defn = new LookupDefinition();
+      ResourceInfo defn = new LookupDefinition();
+      try
+      {
+         defn.findPrimaryKey(this.connect);
+         resources.add(defn);
+         resourceLookup.put(defn.getResourceName(), defn);
+      }
+      catch (Exception e)
+      {
+         LOG.error(e.getMessage());
+      }
 
       ServiceMetadata edm = odata.createServiceMetadata(edmProvider, new ArrayList<EdmxReference>());
 

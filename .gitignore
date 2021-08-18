@@ -19,6 +19,7 @@ hs_err_pid*
 /sql
 /web
 /build
+/.idea
 
 # Project Genereated files
 .pmd
@@ -38,6 +39,7 @@ nb-configuration.xml
 .externalToolBuilders
 maven-eclipse.xml
 dependency-reduced-pom.xml
+src/main/java/org/reso/service/data/definition/custom/*.java
 src/main/java/org/reso/service/data/definition/ContactListingNotesDefinition.java
 src/main/java/org/reso/service/data/definition/ContactListingsDefinition.java
 src/main/java/org/reso/service/data/definition/ContactsDefinition.java

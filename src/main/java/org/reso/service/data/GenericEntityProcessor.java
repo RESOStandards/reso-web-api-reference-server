@@ -111,7 +111,7 @@ public class GenericEntityProcessor implements EntityProcessor
          for (final UriParameter key : keyPredicates)
          {
             // key
-            String keyName = key.getName().toLowerCase();
+            String keyName = key.getName(); // .toLowerCase();
             String keyValue = key.getText();
             if (sqlCriteria==null)
             {

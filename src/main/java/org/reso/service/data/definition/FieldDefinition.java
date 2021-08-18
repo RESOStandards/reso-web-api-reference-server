@@ -1,4 +1,4 @@
-package org.reso.service.data.definition.custom;
+package org.reso.service.data.definition;
 
 import org.apache.olingo.commons.api.data.Entity;
 import org.apache.olingo.commons.api.data.EntityCollection;
@@ -6,8 +6,6 @@ import org.apache.olingo.commons.api.data.Property;
 import org.apache.olingo.commons.api.data.ValueType;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.provider.CsdlAnnotation;
-import org.apache.olingo.commons.api.edm.provider.CsdlEntitySet;
 import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriParameter;
@@ -16,12 +14,10 @@ import org.apache.olingo.server.api.uri.queryoption.expression.ExpressionVisitEx
 import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.data.meta.BreakdownOfFilterExpressionVisitor;
 import org.reso.service.data.meta.FieldInfo;
-import org.reso.service.data.meta.MySQLFilterExpressionVisitor;
 import org.reso.service.data.meta.ResourceInfo;
 
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.util.*;
 
 public class FieldDefinition extends ResourceInfo
@@ -36,6 +32,7 @@ public class FieldDefinition extends ResourceInfo
       this.tableName = "field";  // Never used
       this.resourcesName = "Field";
       this.resourceName = "Field";
+      this.primaryKeyName = "FieldKey";
    }
 
    public ArrayList<FieldInfo> getFieldList()
@@ -95,7 +92,7 @@ public class FieldDefinition extends ResourceInfo
          for (final UriParameter key : keyPredicates)
          {
             // key
-            String keyName = key.getName().toLowerCase();
+            String keyName = key.getName(); // .toLowerCase();
             String keyValue = key.getText();
             if (sqlCriteria==null)
             {
