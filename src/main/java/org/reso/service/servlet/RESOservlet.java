@@ -117,47 +117,62 @@ public class RESOservlet extends HttpServlet
 
       // If there is a Certification metadata report file, import it for class definitions.
 
-      if (definitionFile!=null && false)
+      if (definitionFile!=null)
       {
          DefinitionBuilder definitionBuilder = new DefinitionBuilder(definitionFile);
          List<ResourceInfo> loadedResources = definitionBuilder.readResources();
-      }
-
-      // Get all classes with constructors with 0 parameters.  LookupDefinition should not work.
-      try
-      {
-         Class[] classList = ClassLoader.getClasses("org.reso.service.data.definition.custom");
-         for (Class classProto: classList)
+         for (ResourceInfo resource: loadedResources)
          {
-            Constructor ctor = null;
-            Constructor[] ctors = classProto.getDeclaredConstructors();
-            for (int i = 0; i < ctors.length; i++) {
-               ctor = ctors[i];
-               if (ctor.getGenericParameterTypes().length == 0)
-                  break;
-            }
-            if (ctor!=null)
+            try
             {
-               ctor.setAccessible(true);
-               ResourceInfo resource = (ResourceInfo)ctor.newInstance();
-
-               try
-               {
-                  resource.findPrimaryKey(this.connect);
-                  resources.add(resource);
-                  resourceLookup.put(resource.getResourceName(), resource);
-               }
-               catch (Exception e)
-               {
-                  LOG.error("Error with: "+resource.getResourceName()+" - "+e.getMessage());
-               }
+               resource.findPrimaryKey(this.connect);
+               resources.add(resource);
+            }
+            catch (SQLException e)
+            {
+               LOG.error("Error with: "+resource.getResourceName()+" - "+e.getMessage());
             }
          }
       }
-      catch (Exception e)
+      else
       {
-         LOG.error(e.getMessage());
+         // Get all classes with constructors with 0 parameters.  LookupDefinition should not work.
+         try
+         {
+            Class[] classList = ClassLoader.getClasses("org.reso.service.data.definition.custom");
+            for (Class classProto: classList)
+            {
+               Constructor ctor = null;
+               Constructor[] ctors = classProto.getDeclaredConstructors();
+               for (int i = 0; i < ctors.length; i++) {
+                  ctor = ctors[i];
+                  if (ctor.getGenericParameterTypes().length == 0)
+                     break;
+               }
+               if (ctor!=null)
+               {
+                  ctor.setAccessible(true);
+                  ResourceInfo resource = (ResourceInfo)ctor.newInstance();
+
+                  try
+                  {
+                     resource.findPrimaryKey(this.connect);
+                     resources.add(resource);
+                     resourceLookup.put(resource.getResourceName(), resource);
+                  }
+                  catch (Exception e)
+                  {
+                     LOG.error("Error with: "+resource.getResourceName()+" - "+e.getMessage());
+                  }
+               }
+            }
+         }
+         catch (Exception e)
+         {
+            LOG.error(e.getMessage());
+         }
       }
+
 
       ResourceInfo defn = new LookupDefinition();
       try

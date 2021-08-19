@@ -47,24 +47,29 @@ public class FieldDefinition extends ResourceInfo
          return FieldDefinition.fieldList;
       }
 
-      ArrayList<FieldInfo> list = new ArrayList<FieldInfo>();
+      ArrayList<FieldInfo> list = new ArrayList<>();
       FieldDefinition.fieldList = list;
       FieldInfo fieldInfo = null;
 
       fieldInfo = new FieldInfo("FieldKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
       fieldInfo.addAnnotation("Field Key Field", "RESO.OData.Metadata.DisplayName");
+      fieldInfo.addAnnotation("The key used to uniquely identify the Field.", "Core.Description");
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("ResourceName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo.addAnnotation("The name of the resource the field belongs to. This will be a RESO Standard Name, when applicable, but may also be a local resource name.", "Core.Description");
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("FieldName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo.addAnnotation("The name of the field as expressed in the payload. For OData APIs, this field MUST meet certain naming requirements and should be consistent with what’s advertised in the OData XML metadata (to be verified in certification). ", "Core.Description");
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("DisplayName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo.addAnnotation("The display name for the field. SHOULD be provided in all cases where the use of display names is needed, even if the display name is the same as the underlying field name. The DisplayName MAY be a RESO Standard Display Name or a local one. ", "Core.Description");
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("ModificationTimestamp", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
+      fieldInfo.addAnnotation("The timestamp when the field metadata item was last modified. This is used to help rebuild caches when metadata items change so consumers don't have to re-pull and reprocess the entire set of metadata when only a small number of changes have been made.", "Core.Description");
       list.add(fieldInfo);
 
       return FieldDefinition.fieldList;
@@ -74,64 +79,7 @@ public class FieldDefinition extends ResourceInfo
 
    public Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates)
    {
-      ArrayList<FieldInfo> fields = this.getFieldList();
-
-      Entity product = null;
-
-      Map<String, String> properties = System.getenv();
-
-      try {
-
-         String sqlCriteria = null;
-
-         // Statements allow to issue SQL queries to the database
-         Statement statement = null;
-         // Result set get the result of the SQL query
-         String queryString = null;
-
-         for (final UriParameter key : keyPredicates)
-         {
-            // key
-            String keyName = key.getName(); // .toLowerCase();
-            String keyValue = key.getText();
-            if (sqlCriteria==null)
-            {
-               sqlCriteria = keyName + " = " + keyValue;
-            }
-            else
-            {
-               sqlCriteria = sqlCriteria + " and " + keyName + " = " + keyValue;
-            }
-         }
-
-         queryString = "select * from " + this.getTableName();
-
-         if (null!=sqlCriteria && sqlCriteria.length()>0)
-         {
-            queryString = queryString + " WHERE " + sqlCriteria;
-         }
-
-         LOG.info("SQL Query: "+queryString);
-         ResultSet resultSet = statement.executeQuery(queryString);
-
-         String primaryFieldName = this.getPrimaryKeyName();
-
-         // add the lookups from the database.
-         while (resultSet.next())
-         {
-            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet, this, null);
-
-            product = ent;
-         }
-
-         statement.close();
-
-      } catch (Exception e) {
-         LOG.error("Server Error occurred in reading "+this.getResourceName(), e);
-         return product;
-      }
-
-      return product;
+      return null;
    }
 
    public EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException
@@ -173,7 +121,7 @@ public class FieldDefinition extends ResourceInfo
       for (FieldInfo field: resourceFieldList)
       {
          HashMap<String,Object> entityValues = new HashMap<>();
-         entityValues.put("FieldKey", field.getFieldName());
+         entityValues.put("FieldKey", resourceName.toLowerCase()+'_'+field.getFieldName().toLowerCase() );
          entityValues.put("FieldName", field.getFieldName());
          entityValues.put("ResourceName", resourceName);
          entityValues.put("DisplayName", field.getFieldName());
