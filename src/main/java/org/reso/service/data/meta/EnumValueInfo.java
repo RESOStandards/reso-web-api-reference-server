@@ -8,8 +8,8 @@ import java.util.ArrayList;
 
 public class EnumValueInfo
 {
-   private String                    value;
-   private ArrayList<CsdlAnnotation> annotations = new ArrayList<>();
+   private final String                    value;
+   private final ArrayList<CsdlAnnotation> annotations = new ArrayList<>();
 
 
    public EnumValueInfo(String value)

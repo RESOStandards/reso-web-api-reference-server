@@ -38,8 +38,8 @@ public class PostgreSQLFilterExpressionVisitor implements ExpressionVisitor<Stri
       put(BinaryOperatorKind.SUB, " - ");
    }};
 
-   private String entityAlias;
-   private ResourceInfo resourceInfo;
+   private final String       entityAlias;
+   private final ResourceInfo resourceInfo;
 
    public PostgreSQLFilterExpressionVisitor(ResourceInfo resourceInfo) {
       this.entityAlias = resourceInfo.getTableName();

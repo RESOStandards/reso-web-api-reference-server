@@ -9,7 +9,7 @@ import org.apache.olingo.server.api.ServiceMetadata;
 import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.GenericEntityProcessor;
 import org.reso.service.data.definition.LookupDefinition;
-import org.reso.service.data.meta.DefinitionBuilder;
+import org.reso.service.data.meta.builder.DefinitionBuilder;
 import org.reso.service.data.definition.FieldDefinition;
 import org.reso.service.data.meta.ResourceInfo;
 import org.reso.service.edmprovider.RESOedmProvider;
@@ -125,7 +125,7 @@ public class RESOservlet extends HttpServlet
          {
             try
             {
-               resource.findPrimaryKey(this.connect);
+               resource.findPrimaryKey(connect);
                resources.add(resource);
             }
             catch (SQLException e)
@@ -136,7 +136,7 @@ public class RESOservlet extends HttpServlet
       }
       else
       {
-         // Get all classes with constructors with 0 parameters.  LookupDefinition should not work.
+         // Get all classes with constructors with 0 parameters. This is deprecated as the Cert metadata report should work for more people.
          try
          {
             Class[] classList = ClassLoader.getClasses("org.reso.service.data.definition.custom");
@@ -156,7 +156,7 @@ public class RESOservlet extends HttpServlet
 
                   try
                   {
-                     resource.findPrimaryKey(this.connect);
+                     resource.findPrimaryKey(connect);
                      resources.add(resource);
                      resourceLookup.put(resource.getResourceName(), resource);
                   }
@@ -177,7 +177,7 @@ public class RESOservlet extends HttpServlet
       ResourceInfo defn = new LookupDefinition();
       try
       {
-         defn.findPrimaryKey(this.connect);
+         defn.findPrimaryKey(connect);
          resources.add(defn);
          resourceLookup.put(defn.getResourceName(), defn);
       }
@@ -191,8 +191,8 @@ public class RESOservlet extends HttpServlet
       // create odata handler and configure it with CsdlEdmProvider and Processor
       this.handler = odata.createHandler(edm);
 
-      GenericEntityCollectionProcessor entityCollectionProcessor = new GenericEntityCollectionProcessor(this.connect, dbType);
-      GenericEntityProcessor entityProcessor = new GenericEntityProcessor(this.connect);
+      GenericEntityCollectionProcessor entityCollectionProcessor = new GenericEntityCollectionProcessor(connect, dbType);
+      GenericEntityProcessor entityProcessor = new GenericEntityProcessor(connect);
 
       this.handler.register(entityCollectionProcessor);
       this.handler.register(entityProcessor);

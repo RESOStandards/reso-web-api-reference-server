@@ -42,8 +42,8 @@ public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String>
       put(BinaryOperatorKind.SUB, " - ");
    }};
 
-   private String entityAlias;
-   private ResourceInfo resourceInfo;
+   private final String       entityAlias;
+   private final ResourceInfo resourceInfo;
 
    public MySQLFilterExpressionVisitor(ResourceInfo resourceInfo) {
       this.entityAlias = resourceInfo.getTableName();

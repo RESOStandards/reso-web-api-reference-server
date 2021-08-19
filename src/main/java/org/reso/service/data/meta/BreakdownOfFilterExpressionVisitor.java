@@ -33,9 +33,9 @@ public class BreakdownOfFilterExpressionVisitor implements ExpressionVisitor<Str
       put(BinaryOperatorKind.SUB, " - ");
    }};
 
-   private HashMap<String,String> representations = new HashMap<>();
+   private final HashMap<String,String> representations = new HashMap<>();
 
-   private ResourceInfo resourceInfo;
+   private final ResourceInfo resourceInfo;
 
    public BreakdownOfFilterExpressionVisitor(ResourceInfo resourceInfo) {
       this.resourceInfo = resourceInfo;

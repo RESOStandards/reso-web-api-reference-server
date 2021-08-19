@@ -1,8 +1,9 @@
-package org.reso.service.data.meta;
+package org.reso.service.data.meta.builder;
 
 import com.google.gson.stream.JsonReader;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.reso.service.data.meta.*;
 
 import java.io.FileNotFoundException;
 import java.io.FileReader;
@@ -11,214 +12,28 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-class GenericGSONobject<SubType>
-{
-   protected static String subArrayName = "annotations";
-
-   protected JsonReader reader;
-   protected HashMap<String,Object> properties   = new HashMap<>();
-   protected ArrayList<SubType>     subArrayList = new ArrayList<>();
-
-   public GenericGSONobject(JsonReader reader)
-   {
-      this.reader = reader;
-      this.readObject();
-   }
-
-   public Map<String, Object> getPropertiesMeta()
-   {
-      return null;
-   }
-
-   private void readObject()
-   {
-      Map<String, Object> PROPERTIES_META = this.getPropertiesMeta();
-      try
-      {
-         reader.beginObject();
-
-         while (reader.hasNext()) {
-
-            String name = reader.nextName();
-
-            if (PROPERTIES_META.containsKey(name))
-            {
-               Object classType = PROPERTIES_META.get(name);
-
-               if (classType.equals(String.class))
-               {
-                  properties.put(name,reader.nextString() );
-               }
-               else if (classType.equals(Boolean.class))
-               {
-                  properties.put(name,reader.nextBoolean() );
-               }
-               else if (classType.equals(Integer.class))
-               {
-                  properties.put(name,reader.nextInt() );
-               }
-            } else if (name.equals(subArrayName)) {
-               // read array
-               reader.beginArray();
-
-
-               while (reader.hasNext()) {
-                  GenericGSONobject subArrayItem = this.createSubType();
-
-                  subArrayList.add((SubType)subArrayItem);
-               }
-               reader.endArray();
-
-            } else {
-               reader.skipValue(); //avoid some unhandle events
-            }
-         }
-
-         reader.endObject();
-      }
-      catch (IOException e)
-      {
-         e.printStackTrace();
-      }
-   }
-
-   public Object getProperty(String name)
-   {
-      return properties.get(name);
-   }
-
-   protected GenericGSONobject createSubType()  // must also be of type GenericGSONobject
-   {
-      return null;
-   }
-
-
-   /**
-    * Get the annotations for this field.
-    * @return the sub-array for this generic object
-    */
-   public ArrayList<SubType> getSubArrayList()
-   {
-      return subArrayList;
-   }
-   
-}
-
-class FieldObject extends GenericGSONobject<AnnotationObject>
-{
-   private static Map<String, Object> PROPERTIES_META = Stream.of(
-                     new AbstractMap.SimpleEntry<>("resourceName", String.class),
-                     new AbstractMap.SimpleEntry<>("fieldName", String.class),
-                     new AbstractMap.SimpleEntry<>("type", String.class),
-                     new AbstractMap.SimpleEntry<>("nullable", Boolean.class),
-                     new AbstractMap.SimpleEntry<>("maxLength", Integer.class),
-                     new AbstractMap.SimpleEntry<>("scale", Integer.class),
-                     new AbstractMap.SimpleEntry<>("precision", Integer.class),
-                     new AbstractMap.SimpleEntry<>("isCollection", Boolean.class),
-                     new AbstractMap.SimpleEntry<>("unicode", Boolean.class) )
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-   protected static String subArrayName = "annotations";
-
-   public FieldObject(JsonReader reader)
-   {
-      super(reader);
-   }
-
-   public Map<String, Object> getPropertiesMeta()
-   {
-      return PROPERTIES_META;
-   }
-
-   protected GenericGSONobject createSubType()  // must also be of type GenericGSONobject
-   {
-      return new AnnotationObject(reader);
-   }
-
-   /**
-    * Get the annotations for this field.
-    * @return
-    */
-   public ArrayList<AnnotationObject> getAnnotations()
-   {
-      return getSubArrayList();
-   }
-}
-
-class LookupObject extends GenericGSONobject<AnnotationObject>
-{
-   private static Map<String, Object> PROPERTIES_META = Stream.of(
-                     new AbstractMap.SimpleEntry<>("lookupName", String.class),
-                     new AbstractMap.SimpleEntry<>("lookupValue", String.class),
-                     new AbstractMap.SimpleEntry<>("type", String.class) )
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-   protected static String subArrayName = "annotations";
-
-   public LookupObject(JsonReader reader)
-   {
-      super(reader);
-   }
-
-   public Map<String, Object> getPropertiesMeta()
-   {
-      return PROPERTIES_META;
-   }
-
-   protected GenericGSONobject createSubType()  // must also be of type GenericGSONobject
-   {
-      return new AnnotationObject(reader);
-   }
-
-   /**
-    * Get the annotations for this field.
-    * @return
-    */
-   public ArrayList<AnnotationObject> getAnnotations()
-   {
-      return getSubArrayList();
-   }
-}
-
-class AnnotationObject extends GenericGSONobject<Object>
-{
-   private static Map<String, Object> PROPERTIES_META = Stream.of(
-                     new AbstractMap.SimpleEntry<>("term", String.class),
-                     new AbstractMap.SimpleEntry<>("value", String.class) )
-            .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
-
-   public AnnotationObject(JsonReader reader)
-   {
-      super(reader);
-   }
-
-   public Map<String, Object> getPropertiesMeta()
-   {
-      return PROPERTIES_META;
-   }
-}
 
 public class DefinitionBuilder
 {
    // Constants
 
-   private static String EDM_ENUM = "org.reso.metadata.enums";
+   private static final String EDM_ENUM = "org.reso.metadata.enums";
 
-   private static Map<String, FullQualifiedName> EDM_MAP = Stream.of(
+   private static final Map<String, FullQualifiedName> EDM_MAP = Stream.of(
                      new AbstractMap.SimpleEntry<>("Edm.String", EdmPrimitiveTypeKind.String.getFullQualifiedName() ),
                      new AbstractMap.SimpleEntry<>("Edm.Boolean", EdmPrimitiveTypeKind.Boolean.getFullQualifiedName() ),
                      new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
    
-   private static Map<String, Boolean> HEADER_FIELDS = Stream.of(
+   private static final Map<String, Boolean> HEADER_FIELDS = Stream.of(
                      new AbstractMap.SimpleEntry<>("description", true),
                      new AbstractMap.SimpleEntry<>("generatedOn", true),
                      new AbstractMap.SimpleEntry<>("version", true))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
    // Internals
-   private String fileName;
-   private JsonReader reader;
+   private final String     fileName;
+   private       JsonReader reader;
 
    // Constructor
    public DefinitionBuilder(String fileName)
@@ -356,12 +171,41 @@ public class DefinitionBuilder
                   String lookupName = fieldType.substring(EDM_ENUM.length()+1 );
                   EnumFieldInfo enumFieldInfo = new EnumFieldInfo(fieldName, EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
                   enumFieldInfo.setLookupName(lookupName);
+                  if (isCollection==true)
+                  {
+                     enumFieldInfo.setCollection();
+                  }
                   newField = enumFieldInfo;
 
                   ArrayList<GenericGSONobject> lookupList = lookupMap.get(fieldType);
+                  boolean setFlags = lookupList.size()>1;
+
                   for (GenericGSONobject lookupItem: lookupList)
                   {
-                     EnumValueInfo enumValue = new EnumValueInfo((String)lookupItem.getProperty("lookupValue"));
+                     String enumValueString = (String)lookupItem.getProperty("lookupValue");
+                     EnumValueInfo enumValue = new EnumValueInfo(enumValueString);
+
+                     /**
+                     try
+                     {
+                        Long enumLongValue = Long.parseLong(enumValueString);
+                        if (enumLongValue<=0)
+                        {
+                           setFlags = false;
+                        }
+                        else
+                        {
+                           long hob = Long.highestOneBit(enumLongValue);
+                           long lob = Long.lowestOneBit(enumLongValue);
+                           setFlags = (hob==lob);
+                        }
+                     }
+                     catch (Exception e)
+                     {
+                        setFlags = false;
+                     }
+                     /**/
+
 
                      ArrayList<AnnotationObject> annotations = null;
                      if (lookupItem.getClass().equals(LookupObject.class))
@@ -377,6 +221,11 @@ public class DefinitionBuilder
                      }
 
                      enumFieldInfo.addValue(enumValue);
+                  }
+
+                  if (setFlags)
+                  {
+                     enumFieldInfo.setFlags();
                   }
 
                }

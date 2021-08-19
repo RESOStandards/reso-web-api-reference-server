@@ -3,7 +3,7 @@ package org.reso.service.servlet.util;
 
 public class SimpleError
 {
-   private String error;
+   private final String error;
 
    // Constants for standard errors.
    static public String AUTH_REQUIRED = "auth_required";

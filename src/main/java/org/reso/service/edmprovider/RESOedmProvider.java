@@ -15,9 +15,9 @@ import java.util.*;
 
 public class RESOedmProvider extends CsdlAbstractEdmProvider
 {
-   private ArrayList<ResourceInfo> resourceList = new ArrayList<ResourceInfo>();
+   private final       ArrayList<ResourceInfo> resourceList = new ArrayList<ResourceInfo>();
    // Service Namespace
-   public static final String NAMESPACE = "org.reso.metadata";
+   public static final String                  NAMESPACE    = "org.reso.metadata";
 
    // EDM Container
    public static final String CONTAINER_NAME = "Container";

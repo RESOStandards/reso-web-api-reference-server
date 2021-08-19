@@ -34,8 +34,8 @@ import java.util.*;
 public class GenericEntityProcessor implements EntityProcessor
 {
    private OData odata;
-   private ServiceMetadata serviceMetadata;
-   private Connection connect;
+   private       ServiceMetadata serviceMetadata;
+   private final Connection      connect;
    HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger LOG = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
 
@@ -155,7 +155,7 @@ public class GenericEntityProcessor implements EntityProcessor
 
    private URI createId(String entitySetName, Object id) {
       try {
-         return new URI(entitySetName + "('" + String.valueOf(id) + "')");
+         return new URI(entitySetName + "('" + id + "')");
       } catch (URISyntaxException e) {
          throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
       }

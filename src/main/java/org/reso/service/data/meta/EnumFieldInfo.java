@@ -19,13 +19,13 @@ import static org.reso.service.servlet.RESOservlet.getConnection;
 
 public class EnumFieldInfo extends FieldInfo
 {
-   private String lookupName;
-   private              ArrayList<EnumValueInfo> values = new ArrayList<>();
-   private static final Logger            LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
+   private              String                   lookupName;
+   private final        ArrayList<EnumValueInfo> values = new ArrayList<>();
+   private static final Logger                   LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
    private boolean isCollection = false;
    private boolean isFlags = false;
 
-   private static String LOOKUP_COLUMN_NAME = "LookupValue";
+   private static final String LOOKUP_COLUMN_NAME = "LookupValue";
 
    public EnumFieldInfo(String fieldName, FullQualifiedName type)
    {

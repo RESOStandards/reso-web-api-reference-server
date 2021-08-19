@@ -22,7 +22,7 @@ import java.util.*;
 
 public class FieldDefinition extends ResourceInfo
 {
-   private static String STANDARD_NAME = "RESO.OData.Metadata.StandardName";
+   private static final String STANDARD_NAME = "RESO.OData.Metadata.StandardName";
 
    private static ArrayList<FieldInfo> fieldList = null;
    private ArrayList<ResourceInfo> resources;

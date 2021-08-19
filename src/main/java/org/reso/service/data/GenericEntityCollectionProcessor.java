@@ -34,8 +34,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 {
    private              OData                odata;
    private              ServiceMetadata      serviceMetadata;
-   private              Connection           connect           = null;
-   private              String               dbType;
+   private       Connection connect           = null;
+   private final String     dbType;
    HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
 
