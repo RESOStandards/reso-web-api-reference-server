@@ -3,9 +3,8 @@ package org.reso.service.servlet;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.apache.olingo.commons.api.edmx.EdmxReference;
-import org.apache.olingo.server.api.OData;
-import org.apache.olingo.server.api.ODataHttpHandler;
-import org.apache.olingo.server.api.ServiceMetadata;
+import org.apache.olingo.commons.api.http.HttpMethod;
+import org.apache.olingo.server.api.*;
 import org.reso.service.data.GenericEntityCollectionProcessor;
 import org.reso.service.data.GenericEntityProcessor;
 import org.reso.service.data.definition.LookupDefinition;
@@ -127,6 +126,7 @@ public class RESOservlet extends HttpServlet
             {
                resource.findPrimaryKey(connect);
                resources.add(resource);
+               resourceLookup.put(resource.getResourceName(), resource);
             }
             catch (SQLException e)
             {
@@ -174,12 +174,13 @@ public class RESOservlet extends HttpServlet
       }
 
 
-      ResourceInfo defn = new LookupDefinition();
+      LookupDefinition defn = new LookupDefinition();
       try
       {
          defn.findPrimaryKey(connect);
          resources.add(defn);
          resourceLookup.put(defn.getResourceName(), defn);
+         LookupDefinition.loadCache(connect,defn);
       }
       catch (Exception e)
       {
@@ -187,6 +188,7 @@ public class RESOservlet extends HttpServlet
       }
 
       ServiceMetadata edm = odata.createServiceMetadata(edmProvider, new ArrayList<EdmxReference>());
+      edm.getReferences();
 
       // create odata handler and configure it with CsdlEdmProvider and Processor
       this.handler = odata.createHandler(edm);
@@ -206,6 +208,12 @@ public class RESOservlet extends HttpServlet
          entityProcessor.addResource(resource, resource.getResourceName() );
       }
 
+      // We want to pre-load ALL the metadata.  The best way is to do a $metadata request.
+      ODataRequest request = new ODataRequest();
+      request.setRawODataPath("/$metadata");
+      request.setMethod(HttpMethod.GET);
+      request.setProtocol("HTTP/1.1");
+      this.handler.process(request);
    }
 
 

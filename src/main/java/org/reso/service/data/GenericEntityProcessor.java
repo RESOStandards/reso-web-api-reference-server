@@ -18,6 +18,8 @@ import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
 import org.reso.service.data.common.CommonDataProcessing;
+import org.reso.service.data.meta.EnumFieldInfo;
+import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 import org.slf4j.Logger;
@@ -31,12 +33,15 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.*;
 
+import static org.reso.service.servlet.RESOservlet.resourceLookup;
+
 public class GenericEntityProcessor implements EntityProcessor
 {
    private OData odata;
    private       ServiceMetadata serviceMetadata;
    private final Connection      connect;
-   HashMap<String, ResourceInfo> resourceList = null;
+   private HashMap<String, ResourceInfo> resourceList = null;
+
    private static final Logger LOG = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
 
 
@@ -98,6 +103,7 @@ public class GenericEntityProcessor implements EntityProcessor
       Entity product = null;
 
       Map<String, String> properties = System.getenv();
+      List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
 
       try {
 
@@ -134,15 +140,34 @@ public class GenericEntityProcessor implements EntityProcessor
          ResultSet resultSet = statement.executeQuery(queryString);
 
          String primaryFieldName = resource.getPrimaryKeyName();
+         ArrayList<String> resourceRecordKeys = new ArrayList<>();
 
          // add the lookups from the database.
          while (resultSet.next())
          {
             Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,null);
+            resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
 
             product = ent;
          }
 
+         if (product!=null && resourceRecordKeys.size()>0 && enumFields.size()>0)
+         {
+            queryString = "select * from lookup_value";
+            queryString = queryString + " WHERE ResourceRecordKey in (\"" + String.join("','", resourceRecordKeys ) + "\")";
+
+            LOG.info("SQL Query: "+queryString);
+            resultSet = statement.executeQuery(queryString);
+
+            // add the lookups from the database.
+            HashMap<String, Object> enumValues = new HashMap<>();
+            while (resultSet.next())
+            {
+               CommonDataProcessing.getEntityValues(resultSet, enumValues, enumFields);
+            }
+            CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+
+         }
          statement.close();
 
       } catch (Exception e) {

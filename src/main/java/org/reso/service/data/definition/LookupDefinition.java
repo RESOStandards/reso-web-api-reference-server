@@ -8,11 +8,16 @@ import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
 
+import java.sql.Connection;
 import java.util.ArrayList;
+import java.util.HashMap;
+
+import static org.reso.service.data.common.CommonDataProcessing.loadAllResource;
 
 public class LookupDefinition extends ResourceInfo
 {
    private static ArrayList<FieldInfo> fieldList = null;
+   private static HashMap<String, HashMap<String,Object>> lookupCache = new HashMap<>();
 
    public LookupDefinition()
    {
@@ -63,6 +68,7 @@ public class LookupDefinition extends ResourceInfo
       enumFieldInfo.setLookupName("EnumTest");
       //enumFieldInfo.setCollection();
       enumFieldInfo.setFlags();
+
       EnumValueInfo enumValue = new EnumValueInfo("Awnings");
       enumFieldInfo.addValue(enumValue);
       enumValue = new EnumValueInfo("Boatslip");
@@ -74,6 +80,21 @@ public class LookupDefinition extends ResourceInfo
 
 
       return LookupDefinition.fieldList;
+   }
+
+   public static void loadCache(Connection connect, LookupDefinition resource)
+   {
+      ArrayList<HashMap<String, Object>> lookups = loadAllResource(connect, resource);
+      String pKey = resource.getPrimaryKeyName();
+      for (HashMap<String, Object> lookup: lookups)
+      {
+         lookupCache.put(lookup.get(pKey).toString(),lookup);
+      }
+   }
+
+   public static HashMap<String, HashMap<String,Object>> getLookupCache()
+   {
+      return LookupDefinition.lookupCache;
    }
 
 }

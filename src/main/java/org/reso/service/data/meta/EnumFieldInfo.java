@@ -21,6 +21,8 @@ public class EnumFieldInfo extends FieldInfo
 {
    private              String                   lookupName;
    private final        ArrayList<EnumValueInfo> values = new ArrayList<>();
+   private final        HashMap<String,Object> valueLookup = new HashMap<>();
+
    private static final Logger                   LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
    private boolean isCollection = false;
    private boolean isFlags = false;
@@ -127,4 +129,28 @@ public class EnumFieldInfo extends FieldInfo
       return isFlags;
    }
 
+
+   public Object getValueOf(String enumStringValue)
+   {
+      Object value = valueLookup.get(enumStringValue);
+      if (value==null)
+      {
+         long bitValue = 1;
+         for (EnumValueInfo val: values)
+         {
+            valueLookup.put(val.getValue(),bitValue);
+            if (isFlags)
+            {
+               bitValue = bitValue * 2;
+            }
+            else
+            {
+               bitValue = bitValue+1;
+            }
+         }
+         value = valueLookup.get(enumStringValue);
+      }
+
+      return value;
+   }
 }

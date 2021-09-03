@@ -6,7 +6,7 @@ name: Gradle Package
 on:
   push:
     branches:
-      - "main"
+      - "develop" # not a branch that currently exists.  No need to do this atm.
 
 jobs:
   build:

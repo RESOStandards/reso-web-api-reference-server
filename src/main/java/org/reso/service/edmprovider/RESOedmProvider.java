@@ -282,7 +282,8 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
                      for (EnumValueInfo value: values)
                      {
-                        CsdlEnumMember member = new CsdlEnumMember().setName(value.getValue()).setValue(""+bitValue);
+                        String valueString = value.getValue();
+                        CsdlEnumMember member = new CsdlEnumMember().setName(valueString).setValue(""+enumField.getValueOf(valueString));
                         member.setAnnotations(value.getAnnotations());
                         csdlMembers.add(member);
                         bitValue = bitValue*2;

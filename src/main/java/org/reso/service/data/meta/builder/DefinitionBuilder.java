@@ -178,7 +178,7 @@ public class DefinitionBuilder
                   newField = enumFieldInfo;
 
                   ArrayList<GenericGSONobject> lookupList = lookupMap.get(fieldType);
-                  boolean setFlags = lookupList.size()>1;
+                  boolean setFlags = false; //lookupList.size()>1;
 
                   for (GenericGSONobject lookupItem: lookupList)
                   {
