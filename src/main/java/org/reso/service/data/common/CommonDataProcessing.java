@@ -150,13 +150,20 @@ public class CommonDataProcessing
       return ent;
    }
 
-   public static void getEntityValues(ResultSet resultSet,HashMap<String, Object> entity, List<FieldInfo> enumFields) throws SQLException
+   public static void getEntityValues(ResultSet resultSet,HashMap<String, HashMap<String, Object>> entities, List<FieldInfo> enumFields) throws SQLException
    {
       HashMap<String, EnumFieldInfo> enumFieldLookup = new HashMap<>();
       EnumFieldInfo field = null;
 
       String value = resultSet.getString("LookupKey");
       String fieldName = resultSet.getString("FieldName");
+      String resourceRecordKey = resultSet.getString("ResourceRecordKey");
+      HashMap<String, Object> entity = entities.get(resourceRecordKey);
+      if (entity==null)
+      {
+         entity = new HashMap<>();
+         entities.put(resourceRecordKey, entity);
+      }
 
       for (FieldInfo f : enumFields)
       {
@@ -251,6 +258,22 @@ public class CommonDataProcessing
             }
          }
       }
+   }
+
+   public static HashMap<String,Object> translateEntityToMap(Entity entity)
+   {
+      HashMap<String,Object> result = new HashMap<>();
+
+      List<Property> properties = entity.getProperties();
+      
+      for (Property property: properties)
+      {
+         String name = property.getName();
+         Object value = property.getValue();
+         result.put(name,value);
+      }
+      
+      return result;
    }
 
    public static ArrayList<HashMap<String,Object>> loadAllResource(Connection connect, ResourceInfo resource)

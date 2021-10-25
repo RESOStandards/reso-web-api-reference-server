@@ -280,12 +280,37 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             entCollection.setCount(size);
             return entCollection;
          }
+         ArrayList<String> resourceRecordKeys = new ArrayList<>();
 
          // add the lookups from the database.
          while (resultSet.next())
          {
             Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
+            resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
             productList.add(ent);
+         }
+         List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
+
+         if (productList.size()>0 && resourceRecordKeys.size()>0 && enumFields.size()>0)
+         {
+            queryString = "select * from lookup_value";
+            queryString = queryString + " WHERE ResourceRecordKey in (\"" + String.join("','", resourceRecordKeys ) + "\")";
+
+            LOG.info("SQL Query: "+queryString);
+            resultSet = statement.executeQuery(queryString);
+
+            // add the lookups from the database.
+            HashMap<String, HashMap<String, Object>> entities = new HashMap<>();
+            while (resultSet.next())
+            {
+               CommonDataProcessing.getEntityValues(resultSet, entities, enumFields);
+            }
+            for (Entity product :productList)
+            {
+               String key = product.getProperty(primaryFieldName).getValue().toString();
+               HashMap<String, Object> enumValues = entities.get(key);
+               CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+            }
          }
 
          statement.close();

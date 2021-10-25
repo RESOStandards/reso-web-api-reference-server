@@ -1,0 +1,8 @@
+COMPOSE_FILE=docker-compose.yml:./optional/docker-db-compose.yml
+SQL_HOST=docker-mysql
+SQL_USER=root
+SQL_PASSWORD=root
+SQL_DB_DRIVER=com.mysql.cj.jdbc.Driver
+SQL_CONNECTION_STR=jdbc:mysql://docker-mysql/reso_data_dictionary_1_7?autoReconnect=true&maxReconnects=4
+#&user=root&password=root
+CERT_REPORT_FILENAME=RESODataDictionary-1.7.metadata-report.json

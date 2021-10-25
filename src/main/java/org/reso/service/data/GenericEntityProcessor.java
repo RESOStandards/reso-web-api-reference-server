@@ -4,11 +4,14 @@ package org.reso.service.data;
 import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
 import org.apache.olingo.commons.api.http.HttpStatusCode;
 import org.apache.olingo.server.api.*;
+import org.apache.olingo.server.api.deserializer.DeserializerResult;
+import org.apache.olingo.server.api.deserializer.ODataDeserializer;
 import org.apache.olingo.server.api.processor.EntityProcessor;
 import org.apache.olingo.server.api.serializer.EntitySerializerOptions;
 import org.apache.olingo.server.api.serializer.ODataSerializer;
@@ -22,6 +25,7 @@ import org.reso.service.data.meta.EnumFieldInfo;
 import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
+import org.reso.service.data.meta.builder.FieldObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -30,6 +34,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
@@ -160,10 +165,13 @@ public class GenericEntityProcessor implements EntityProcessor
             resultSet = statement.executeQuery(queryString);
 
             // add the lookups from the database.
+            HashMap<String, HashMap<String, Object>> entities = new HashMap<>();
             HashMap<String, Object> enumValues = new HashMap<>();
+            entities.put(resourceRecordKeys.get(0), enumValues);
+
             while (resultSet.next())
             {
-               CommonDataProcessing.getEntityValues(resultSet, enumValues, enumFields);
+               CommonDataProcessing.getEntityValues(resultSet, entities, enumFields);
             }
             CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
 
@@ -189,7 +197,107 @@ public class GenericEntityProcessor implements EntityProcessor
    @Override public void createEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType requestFormat, ContentType responseFormat)
             throws ODataApplicationException, ODataLibraryException
    {
+      // 1. retrieve the Entity Type
+      List<UriResource> resourcePaths = uriInfo.getUriResourceParts();
+      // Note: only in our example we can assume that the first segment is the EntitySet
+      UriResourceEntitySet uriResourceEntitySet = (UriResourceEntitySet) resourcePaths.get(0);
+      EdmEntitySet edmEntitySet = uriResourceEntitySet.getEntitySet();
 
+      ResourceInfo resource = this.resourceList.get(resourcePaths.get(0).toString());
+      EdmEntityType edmEntityType = edmEntitySet.getEntityType();
+
+      // 2. create the data in backend
+      // 2.1. retrieve the payload from the POST request for the entity to create and deserialize it
+      InputStream requestInputStream = request.getBody();
+      ODataDeserializer deserializer = this.odata.createDeserializer(requestFormat);
+      DeserializerResult result = deserializer.entity(requestInputStream, edmEntityType);
+      Entity requestEntity = result.getEntity();
+      // 2.2 do the creation in backend, which returns the newly created entity
+      //Entity createdEntity = storage.createEntityData(edmEntitySet, requestEntity);
+      HashMap<String, Object> mappedObj = CommonDataProcessing.translateEntityToMap(requestEntity);
+      String primaryFieldName = resource.getPrimaryKeyName();
+      List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
+      ArrayList<Object> enumValues = new ArrayList<>();
+      for (FieldInfo field: enumFields)
+      {
+         if (field.isCollection())
+         {
+            String fieldName = field.getFieldName();
+            Object value = mappedObj.remove(fieldName);
+            enumValues.add(value);
+         }
+      }
+
+      saveData(resource, mappedObj);
+
+      // 3. serialize the response (we have to return the created entity)
+      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
+      // expand and select currently not supported
+      EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).build();
+
+      ODataSerializer serializer = this.odata.createSerializer(responseFormat);
+      SerializerResult serializedResponse = serializer.entity(serviceMetadata, edmEntityType, requestEntity, options);
+      //SerializerResult serializedResponse = serializer.entity(serviceMetadata, edmEntityType, createdEntity, options);
+
+      //4. configure the response object
+      response.setContent(serializedResponse.getContent());
+      response.setStatusCode(HttpStatusCode.CREATED.getStatusCode());
+      response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());   }
+
+
+   private void saveData(ResourceInfo resource, HashMap<String, Object> mappedObj)
+   {
+      String queryString = "insert into " + resource.getTableName();
+      try
+      {
+         Statement statement = connect.createStatement();
+         ArrayList<String> columnNames = new ArrayList<>();
+         ArrayList<String> columnValues = new ArrayList<>();
+
+         ArrayList<FieldInfo> fieldList = resource.getFieldList();
+         HashMap<String, FieldInfo> fieldLookup = new HashMap<>();
+
+         for (FieldInfo field: fieldList)
+         {
+            fieldLookup.put(field.getFieldName(),field);
+         }
+
+         for (Map.Entry<String,Object> entrySet: mappedObj.entrySet())
+         {
+            String key = entrySet.getKey();
+            Object value = entrySet.getValue();
+            columnNames.add(key);
+
+            FieldInfo field = fieldLookup.get(key);
+
+            if (value==null)
+            {
+               columnValues.add("NULL");
+            }
+            else if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
+            {
+               columnValues.add('"'+value.toString()+'"');
+            }
+            else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
+            {
+               columnValues.add('"'+value.toString()+'"');
+            }
+            else
+            {
+               columnValues.add(value.toString());
+            }
+
+         }
+
+         queryString = queryString+" ("+String.join(",",columnNames)+") values ("+String.join(",",columnValues)+")";
+
+         //boolean success = statement.execute(queryString);
+      }
+      catch (SQLException e)
+      {
+         LOG.error(e.getMessage());
+      }
+      // Result set get the result of the SQL query
    }
 
 
