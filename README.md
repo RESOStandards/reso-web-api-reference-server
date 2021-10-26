@@ -31,3 +31,27 @@ You will need to configure the following environment variables, so the server ca
 * SQL_HOST
 * SQL_USER
 * SQL_PASSWORD
+
+## ENVIRNONMENT SPECIFIC NOTES
+
+The build scripts were moved to take place in a Docker container so that they would work consistently across environments.
+
+### Windows
+In Windows, running under a Bash shell will work, assuming you meet the above requirements.
+Don't forget to have Docker installed for Windows.
+
+There is an `env-default-windows` file you should rename to `.env` before running the build script.
+
+The `docker/docker-builder` file has a line commented out for Windows users.
+
+### MAC
+
+This has not been tested.  Anyone wanting to give feedback would be appreciated.
+
+## BUILD FAILURES
+
+In the case this happens, and you have fixed the source of the error and need to rebuild everything using the build scripts, you should delete any prior Docker containers.
+
+## Customizing your setup
+
+You can have your own SQL database.  Just copy the `env-default` file to `.env` and modify the appropriate properties.

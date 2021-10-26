@@ -1,4 +1,5 @@
-COMPOSE_FILE=docker-compose.yml:./optional/docker-db-compose.yml
+#Composer file needs a specific separator on Windows.
+COMPOSE_FILE=docker-compose.yml;./optional/docker-db-compose.yml
 SQL_HOST=docker-mysql
 SQL_USER=root
 SQL_PASSWORD=root
