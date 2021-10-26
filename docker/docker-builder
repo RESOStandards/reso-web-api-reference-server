@@ -1,7 +1,9 @@
 FROM ubuntu:20.10
 
 WORKDIR /usr/src/app
+ARG DEBIAN_FRONTEND=noninteractive
+RUN apt-get update && apt-get install -y wget openjdk-8-jdk curl pip maven docker-compose
 
-RUN apt-get update && apt-get install -y wget curl pip maven docker-compose
+RUN update-java-alternatives -s java-1.8.0-openjdk-amd64
 
 CMD ./docker/scripts/build.sh

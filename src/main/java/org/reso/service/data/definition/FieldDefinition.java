@@ -61,7 +61,7 @@ public class FieldDefinition extends ResourceInfo
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("FieldName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      fieldInfo.addAnnotation("The name of the field as expressed in the payload. For OData APIs, this field MUST meet certain naming requirements and should be consistent with what’s advertised in the OData XML metadata (to be verified in certification). ", "Core.Description");
+      fieldInfo.addAnnotation("The name of the field as expressed in the payload. For OData APIs, this field MUST meet certain naming requirements and should be consistent with what's advertised in the OData XML metadata (to be verified in certification). ", "Core.Description");
       list.add(fieldInfo);
 
       fieldInfo = new FieldInfo("DisplayName", EdmPrimitiveTypeKind.String.getFullQualifiedName());

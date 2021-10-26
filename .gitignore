@@ -32,6 +32,7 @@ target
 bin
 *.iml
 *.bak
+.env*
 classes
 .DS_Store
 *.local

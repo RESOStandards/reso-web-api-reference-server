@@ -15,6 +15,7 @@ services:
       - SQL_PASSWORD
       - SQL_CONNECTION_STR
       - SQL_DB_DRIVER
+      - CERT_REPORT_FILENAME
     volumes:
       - ./target:/usr/local/tomcat/webapps
 #    depends_on:
