@@ -46,7 +46,7 @@ public class DefinitionBuilder
    {
       try
       {
-         reader = new JsonReader(new FileReader(fileName));
+         reader = new JsonReader(new FileReader("webapps/"+fileName));
       }
       catch (FileNotFoundException e)
       {
