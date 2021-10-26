@@ -1,4 +1,4 @@
-COMPOSE_FILE=docker-compose.yml:./optional/docker-db-compose.yml
+COMPOSE_FILE=docker-compose.yml;./optional/docker-db-compose.yml
 SQL_HOST=docker-mysql
 SQL_USER=root
 SQL_PASSWORD=root

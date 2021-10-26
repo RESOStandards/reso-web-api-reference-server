@@ -9,10 +9,6 @@ SQL_DIR="${HOME_DIR}/sql"
 # Ensure we have directories set up
 [ -d "${TEMP_DIR}" ] && echo "temp directory found." ||  mkdir ${TEMP_DIR}
 [ -d "${SQL_DIR}" ] && echo "sql directory found." ||  mkdir ${SQL_DIR}
-if [ ! -f "${HOME_DIR}/.env" ]
-then
-  cp "${HOME_DIR}/env-default" "${HOME_DIR}/.env"
-fi
 
 if [ -z "${SQL_HOST}" ]
 then

@@ -5,6 +5,11 @@ HOME_DIR=`dirname ${REAL_VAR0}`
 TEMP_DIR="${HOME_DIR}/temp"
 SQL_DIR="${HOME_DIR}/sql"
 
+if [ ! -f "${HOME_DIR}/.env" ]
+then
+  cp "${HOME_DIR}/env-default" "${HOME_DIR}/.env"
+fi
+
 docker build -t reso-builder -f docker/docker-builder .
 docker run --name builder --mount type=bind,source="${HOME_DIR}",target=/usr/src/app -t reso-builder
 
