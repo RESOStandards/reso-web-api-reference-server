@@ -46,8 +46,6 @@ public class DefinitionBuilder
    {
       try
       {
-         String userDirectory = System.getProperty("user.dir");
-         System.out.println(userDirectory);
          reader = new JsonReader(new FileReader("webapps/"+fileName));
       }
       catch (FileNotFoundException e)
