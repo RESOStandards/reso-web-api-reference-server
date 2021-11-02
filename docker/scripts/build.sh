@@ -38,16 +38,23 @@ fi
 #unzip -d /opt/gradle /tmp/gradle-${VERSION}-bin.zip
 #ln -s /opt/gradle/gradle-${VERSION} /opt/gradle/latest
 
+if gradle build
+then
+  cp build/libs/RESOservice-1.0.war ./target/
+  cp RESODataDictionary-1.7.metadata-report.json ./target/
+else
+
 #/opt/gradle/latest/bin/gradle build
 #mkdir target
 #cp build/libs/RESOservice-1.0.war ./target/
 #cp RESODataDictionary-1.7.metadata-report.json ./target/
 
-if ! mvn compile
-then
-  echo "Maven could not be found."
-  exit
-else
-  mvn package
-  cp RESODataDictionary-1.7.metadata-report.json ./target/
+  if ! mvn compile
+  then
+    echo "Maven could not be found."
+    exit
+  else
+    mvn package
+    cp RESODataDictionary-1.7.metadata-report.json ./target/
+  fi
 fi
