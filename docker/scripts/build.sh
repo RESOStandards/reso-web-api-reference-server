@@ -1,8 +1,7 @@
 #!/bin/bash
 
-REAL_VAR0=`readlink -f $0`
-HOME_DIR_OLD=`dirname ${REAL_VAR0}`
 HOME_DIR=/usr/src/app
+cd "${HOME_DIR}"
 TEMP_DIR="${HOME_DIR}/temp"
 SQL_DIR="${HOME_DIR}/sql"
 

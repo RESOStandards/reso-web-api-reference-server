@@ -12,6 +12,10 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.reso.service.servlet.RESOservlet;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 
 public class DefinitionBuilder
 {
@@ -30,6 +34,8 @@ public class DefinitionBuilder
                      new AbstractMap.SimpleEntry<>("generatedOn", true),
                      new AbstractMap.SimpleEntry<>("version", true))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+
+   private static final Logger     LOG     = LoggerFactory.getLogger(DefinitionBuilder.class);
 
    // Internals
    private final String     fileName;
@@ -50,6 +56,7 @@ public class DefinitionBuilder
       }
       catch (FileNotFoundException e)
       {
+         LOG.info("ERROR:",e.getMessage());
          e.printStackTrace();
       }
    }

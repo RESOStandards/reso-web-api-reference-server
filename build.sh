@@ -11,7 +11,7 @@ then
 fi
 
 #Needed for Linux builds
-chmod a+x "${HOME_DIR}/docker/scripts/*"
+chmod a+x ./docker/scripts/*
 
 docker build -t reso-builder -f docker/docker-builder .
 docker run --name builder --mount type=bind,source="${HOME_DIR}",target=/usr/src/app -t reso-builder

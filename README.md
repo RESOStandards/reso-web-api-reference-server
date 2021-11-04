@@ -42,7 +42,7 @@ Don't forget to have Docker installed for Windows.
 
 There is an `env-default-windows` file you should rename to `.env` before running the build script.
 
-The `docker/docker-builder` file has a line commented out for Windows users.
+The `docker/docker-builder` file has a line commented out for Windows users, and a line that needs to be commented out.
 
 ### MAC
 
