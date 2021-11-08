@@ -32,10 +32,7 @@ import org.slf4j.LoggerFactory;
 import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.sql.Statement;
+import java.sql.*;
 import java.util.*;
 
 import static org.reso.service.servlet.RESOservlet.resourceLookup;
@@ -102,12 +99,23 @@ public class GenericEntityProcessor implements EntityProcessor
       response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
    }
 
-   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource) throws ODataApplicationException {
+
+   /**
+    * Reads data from a resource and returns it as a HashMap
+    * @param keyPredicates
+    * @param resource
+    * @return
+    */
+   private HashMap<String,Object> getDataToHash(List<UriParameter> keyPredicates, ResourceInfo resource)
+   {
+      return CommonDataProcessing.translateEntityToMap(this.getData(null, keyPredicates, resource));
+   }
+
+   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource) {
       ArrayList<FieldInfo> fields = resource.getFieldList();
 
       Entity product = null;
 
-      Map<String, String> properties = System.getenv();
       List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
 
       try {
@@ -119,18 +127,21 @@ public class GenericEntityProcessor implements EntityProcessor
          // Result set get the result of the SQL query
          String queryString = null;
 
-         for (final UriParameter key : keyPredicates)
+         if (null!=keyPredicates)
          {
-            // key
-            String keyName = key.getName(); // .toLowerCase();
-            String keyValue = key.getText();
-            if (sqlCriteria==null)
+            for (final UriParameter key : keyPredicates)
             {
-               sqlCriteria = keyName + " = " + keyValue;
-            }
-            else
-            {
-               sqlCriteria = sqlCriteria + " and " + keyName + " = " + keyValue;
+               // key
+               String keyName = key.getName(); // .toLowerCase();
+               String keyValue = key.getText();
+               if (sqlCriteria==null)
+               {
+                  sqlCriteria = keyName + " = " + keyValue;
+               }
+               else
+               {
+                  sqlCriteria = sqlCriteria + " and " + keyName + " = " + keyValue;
+               }
             }
          }
 
@@ -213,22 +224,23 @@ public class GenericEntityProcessor implements EntityProcessor
       DeserializerResult result = deserializer.entity(requestInputStream, edmEntityType);
       Entity requestEntity = result.getEntity();
       // 2.2 do the creation in backend, which returns the newly created entity
-      //Entity createdEntity = storage.createEntityData(edmEntitySet, requestEntity);
       HashMap<String, Object> mappedObj = CommonDataProcessing.translateEntityToMap(requestEntity);
-      String primaryFieldName = resource.getPrimaryKeyName();
+
       List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
-      ArrayList<Object> enumValues = new ArrayList<>();
+      HashMap<String, Object>  enumValues = new HashMap<>();
       for (FieldInfo field: enumFields)
       {
+         // We remove all entities that are collections to save to the lookup_value table separately. @TODO: save these values
          if (field.isCollection())
          {
             String fieldName = field.getFieldName();
             Object value = mappedObj.remove(fieldName);
-            enumValues.add(value);
+            enumValues.put(fieldName, value);
          }
       }
 
       saveData(resource, mappedObj);
+      saveEnumData(resource, enumValues);
 
       // 3. serialize the response (we have to return the created entity)
       ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
@@ -242,7 +254,8 @@ public class GenericEntityProcessor implements EntityProcessor
       //4. configure the response object
       response.setContent(serializedResponse.getContent());
       response.setStatusCode(HttpStatusCode.CREATED.getStatusCode());
-      response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());   }
+      response.setHeader(HttpHeader.CONTENT_TYPE, responseFormat.toContentTypeString());
+   }
 
 
    private void saveData(ResourceInfo resource, HashMap<String, Object> mappedObj)
@@ -298,6 +311,75 @@ public class GenericEntityProcessor implements EntityProcessor
          LOG.error(e.getMessage());
       }
       // Result set get the result of the SQL query
+   }
+
+   private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues)
+   {
+      for (String key: enumValues.keySet() )
+      {
+         Object value = enumValues.get(key);
+         saveEnumData(resource, key, value);
+      }
+   }
+
+
+   /**
+    * Save the Enum values for the enumObject for the resource.
+    * lookup_value table:
+    * +--------------------------+------------+------+-----+---------------------+-------------------------------+
+    * | Field                    | Type       | Null | Key | Default             | Extra                         |
+    * +--------------------------+------------+------+-----+---------------------+-------------------------------+
+    * | LookupValueKey           | text       | YES  |     | NULL                |                               |
+    * | LookupValueKeyNumeric    | bigint(20) | YES  |     | NULL                |                               |
+    * | ResourceName             | text       | YES  |     | NULL                |                               |
+    * | ResourceRecordKey        | text       | YES  |     | NULL                |                               |
+    * | ResourceRecordKeyNumeric | bigint(20) | YES  |     | NULL                |                               |
+    * | LookupKey                | text       | YES  |     | NULL                |                               |
+    * | modificationTimestamp    | timestamp  | NO   |     | current_timestamp() | on update current_timestamp() |
+    * | FieldName                | text       | NO   |     | NULL                |                               |
+    * +--------------------------+------------+------+-----+---------------------+-------------------------------+
+    * @param resource
+    * @param values
+    */
+   private void saveEnumData(ResourceInfo resource, String lookupEnumField, Object values)
+   {
+      String queryString = "insert into lookup_value";
+
+      /**
+       String value = resultSet.getString("LookupKey");
+       String fieldName = resultSet.getString("FieldName");
+       String resourceRecordKey = resultSet.getString("ResourceRecordKey");
+       */
+
+      try
+      {
+         Statement statement = connect.createStatement();
+         List<String> columnNames = Arrays.asList("FieldName","LookupKey");
+
+         ArrayList valueArray;
+
+         if (values instanceof ArrayList)
+         {
+            valueArray = (ArrayList) values;
+         }
+         else
+         {
+            ArrayList temp = new ArrayList();
+            temp.add(values);
+            valueArray = temp;
+         }
+
+         for (Object value : valueArray)
+         {
+            ArrayList<String> columnValues = new ArrayList(Arrays.asList(lookupEnumField,value.toString()));
+         }
+
+      }
+      catch (SQLException e)
+      {
+         LOG.error(e.getMessage());
+      }
+
    }
 
 

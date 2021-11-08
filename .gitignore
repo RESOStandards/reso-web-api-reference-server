@@ -36,6 +36,8 @@ bin
 classes
 .DS_Store
 *.local
+/*.sql
+/*.json
 nb-configuration.xml
 .externalToolBuilders
 maven-eclipse.xml

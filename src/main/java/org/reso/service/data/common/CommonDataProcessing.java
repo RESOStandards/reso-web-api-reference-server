@@ -35,6 +35,13 @@ public class CommonDataProcessing
    private static final Logger LOG = LoggerFactory.getLogger(CommonDataProcessing.class);
    private static HashMap<String, List<FieldInfo>> resourceEnumFields = new HashMap<>();
 
+
+   /**
+    * This function will return the Enum fields for a given resource.
+    * It returns from the cache if found, otherwise it finds the Enum fields from the Field list and caches it for later use.
+    * @param resource
+    * @return List<FieldInfo> The Enum fields' FieldInfo values
+    */
    public static List<FieldInfo> gatherEnumFields(ResourceInfo resource)
    {
       String resourceName = resource.getResourceName();
@@ -56,23 +63,35 @@ public class CommonDataProcessing
          }
       }
 
+      // Put it in the cache
       CommonDataProcessing.resourceEnumFields.put(resourceName, enumFields);
 
       return enumFields;
    }
 
+
+   /**
+    * This will return the value for the field from the result set from the data source.
+    * @param field The field metadata
+    * @param resultSet The data source row
+    * @return A Java Object representing the value.  It can be anything, but should be a simple representation for ease of manipulating.
+    * @throws SQLException in case of SQL error from the data source
+    */
    public static Object getFieldValueFromRow(FieldInfo field, ResultSet resultSet) throws SQLException
    {
       String fieldName = field.getFieldName();
       Object value = null;
+      // In case of a String
       if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
       {
          value = resultSet.getString(fieldName);
       }
+      // In case of a DateTime entry
       else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
       {
          value = resultSet.getTimestamp(fieldName);
       }
+      // @TODO: More will have to be added here, ie: Integers, as data comes in, we can extend this easily here.
       else
       {
          LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
@@ -81,16 +100,32 @@ public class CommonDataProcessing
       return value;
    }
 
+
+   /**
+    * Builds an Entity from the row from the Resource's data source
+    * @param resultSet Data source row result
+    * @param resource The resource we're making an Entity for
+    * @param selectLookup An optional lookup of boolean flags that will only fill in the Entity values for entries with True lookup values
+    * @return An Entity representing the data source row
+    * @throws SQLException in case of SQL error from the data source
+    */
    public static Entity getEntityFromRow(ResultSet resultSet, ResourceInfo resource, HashMap<String,Boolean> selectLookup) throws SQLException
    {
       String primaryFieldName = resource.getPrimaryKeyName();
       ArrayList<FieldInfo> fields = resource.getFieldList();
+
+      // Lookup Key for the primary key
       String lookupKey = null;
+      // We only need to set the entity ID later if we're providing selectLookup and the primary field name is being requested
+      // @TODO: May need different logic here, ie: selectLookup==null || ...
       if (selectLookup!=null && selectLookup.get(primaryFieldName)!=null)
       {
          lookupKey = resultSet.getString(primaryFieldName);
       }
+
+      // New entity to be populated
       Entity ent = new Entity();
+
       for (FieldInfo field : fields)
       {
          String fieldName = field.getODATAFieldName();
@@ -98,14 +133,17 @@ public class CommonDataProcessing
          if ( (selectLookup==null || selectLookup.containsKey(fieldName) ))
          {
             value = CommonDataProcessing.getFieldValueFromRow(field, resultSet);
+            // We only load Enums from the lookup_value table.  @TODO: This may need revision to accommodate lookups on resource tables
             if (field instanceof EnumFieldInfo)
             {
                LOG.error("ENUMS currently only handles by values in lookup_value table.  One must Define if this uses a key a numeric value.");
             }
+            // This is Enums that are bit masks, stored on the resource.
             else if (field.isCollection())
             {
                ent.addProperty(new Property(null, fieldName, ValueType.ENUM, value));
             }
+            // Simply put in primitive values as entity properties.
             else
             {
                ent.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, value));
@@ -113,6 +151,7 @@ public class CommonDataProcessing
          }
       }
 
+      // Set the entity ID if the lookupKey is provided in the select lookups
       if (lookupKey!=null)
       {
          ent.setId(createId(resource.getResourcesName(), lookupKey));
@@ -121,6 +160,16 @@ public class CommonDataProcessing
       return ent;
    }
 
+
+   /**
+    * Returns a HashMap representation of a row from the data source, similar to the above function.
+    *   Useful for building a simple Lookup cache, apart from Entities
+    * @param resultSet Data source row result
+    * @param resource The resource we're making an Entity for
+    * @param selectLookup An optional lookup of boolean flags that will only fill in the Entity values for entries with True lookup values
+    * @return A HashMap representing the data source row
+    * @throws SQLException in case of SQL error from the data source
+    */
    public static HashMap<String,Object> getObjectFromRow(ResultSet resultSet, ResourceInfo resource, HashMap<String,Boolean> selectLookup) throws SQLException
    {
       String primaryFieldName = resource.getPrimaryKeyName();
@@ -150,6 +199,14 @@ public class CommonDataProcessing
       return ent;
    }
 
+
+   /**
+    * For populating entity values Enums based on a potential non-sequential data source query results
+    * @param resultSet Data source row result
+    * @param entities A lookup of HashMap entities to be populated with Enum values
+    * @param enumFields The Enum fields to populate for the resource
+    * @throws SQLException in case of SQL error from the data source
+    */
    public static void getEntityValues(ResultSet resultSet,HashMap<String, HashMap<String, Object>> entities, List<FieldInfo> enumFields) throws SQLException
    {
       HashMap<String, EnumFieldInfo> enumFieldLookup = new HashMap<>();
@@ -207,20 +264,26 @@ public class CommonDataProcessing
       }
    }
 
-   public static void setEntityEnums(HashMap<String, Object> enumValues, Entity entity, List<FieldInfo> enumFields) throws SQLException
-   {
-      HashMap<String,EnumFieldInfo> enumFieldLookup = new HashMap<>();
 
+   /**
+    * Translate the Enum values from a HashMap representation to an Entity representation
+    * @param enumValues The HashMap representation of the Enum values from the data source
+    * @param entity The Entity to populate with Enum values
+    * @param enumFields The Enum fields on the Entity we want values for
+    */
+   public static void setEntityEnums(HashMap<String, Object> enumValues, Entity entity, List<FieldInfo> enumFields)
+   {
       for (FieldInfo field: enumFields)
       {
          EnumFieldInfo enumField = (EnumFieldInfo) field;
          String fieldName = enumField.getFieldName();
-         long totalFlagValues = 3;
+         long totalFlagValues = 0;
 
          if (field.isFlags())
          {
             try
             {
+               // Builds a bit flag representation of the multiple values.
                Object flagValues = enumValues.get(fieldName);
                ArrayList<Object> flagsArray = (ArrayList<Object>) flagValues;
                for (Object flagObj : flagsArray)
@@ -229,18 +292,21 @@ public class CommonDataProcessing
                   totalFlagValues = totalFlagValues + flagLong;
                }
             }
-            catch (Exception e)
+            catch (Exception e)  // In case of casting error.  "Should not happen"
             {
                LOG.error(e.getMessage());
             }
          }
 
+         // There's many ways to represent Enums
          if (field.isCollection())
          {
+            // As a Collection with bit flags
             if (field.isFlags())
             {
                entity.addProperty(new Property(null, fieldName, ValueType.ENUM, totalFlagValues)); // @ToDo: This might not be compatible with anything...
             }
+            // A collection of Primitive types
             else
             {
                entity.addProperty(new Property(null, fieldName, ValueType.COLLECTION_PRIMITIVE, enumValues.get(fieldName)));
@@ -248,10 +314,12 @@ public class CommonDataProcessing
          }
          else
          {
+            // Single value, bit flag representation
             if (field.isFlags())
             {
                entity.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, totalFlagValues));
             }
+            // Single value Primitive
             else
             {
                entity.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, enumValues.get(fieldName)));
@@ -260,6 +328,12 @@ public class CommonDataProcessing
       }
    }
 
+
+   /**
+    * Translates an Entity to a HashMap representation
+    * @param entity The Entity to turn into a HashMap
+    * @return The HashMap representation of the Entity
+    */
    public static HashMap<String,Object> translateEntityToMap(Entity entity)
    {
       HashMap<String,Object> result = new HashMap<>();
@@ -276,6 +350,13 @@ public class CommonDataProcessing
       return result;
    }
 
+
+   /**
+    * Loads all Resource entries into a List of HashMap representations of the entries.  Useful for caching.
+    * @param connect The data source connection
+    * @param resource The Resource to load
+    * @return A List of HashMap representations of the entries
+    */
    public static ArrayList<HashMap<String,Object>> loadAllResource(Connection connect, ResourceInfo resource)
    {
       ArrayList<FieldInfo> fields = resource.getFieldList();
@@ -312,8 +393,15 @@ public class CommonDataProcessing
       }
 
       return productList;
-
    }
+
+
+   /**
+    * Creates an unique URI identifier for the entity / id
+    * @param entitySetName Name of the Entity set
+    * @param id unique ID of the object
+    * @return unique URI identifier for the entity / id
+    */
    private static URI createId(String entitySetName, Object id) {
       try {
          return new URI(entitySetName + "('" + id + "')");

@@ -18,7 +18,7 @@ Run the `run.sh`
 
 ## Access the Server
 
-Assuming you're running the server locally, go to [http://localhost:8080/RESOservice-1.0/$metadata](http://localhost:8080/RESOservice-1.0/$metadata)\
+Assuming you're running the server locally, go to [http://localhost:8080/core/2.0.0/$metadata](http://localhost:8080/core/2.0.0/$metadata)\
 Otherwise, you will have to replace `localhost` with the IP of your Docker machine.
 
 ## Running with a different database
@@ -48,7 +48,7 @@ The `docker/docker-builder` file has a line commented out for Windows users, and
 
 This has not been tested.  Anyone wanting to give feedback would be appreciated.
 
-## BUILD FAILURES
+## Build Failures
 
 In the case this happens, and you have fixed the source of the error and need to rebuild everything using the build scripts, you should delete any prior Docker containers.
 

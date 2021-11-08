@@ -61,10 +61,10 @@ public class LookupDefinition extends ResourceInfo
       fieldInfo = new FieldInfo("ModificationTimestamp", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
       list.add(fieldInfo);
 
+      /**
       //// Enum Test code
       EnumFieldInfo enumFieldInfo = new EnumFieldInfo("EnumTest", EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
 
-      /**
       enumFieldInfo.setLookupName("EnumTest");
       //enumFieldInfo.setCollection();
       enumFieldInfo.setFlags();

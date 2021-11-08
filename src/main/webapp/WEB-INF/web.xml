@@ -23,6 +23,6 @@
 
     <servlet-mapping>
         <servlet-name>RESOservlet</servlet-name>
-        <url-pattern>/*</url-pattern>
+        <url-pattern>/2.0.0/*</url-pattern>
     </servlet-mapping>
 </web-app>

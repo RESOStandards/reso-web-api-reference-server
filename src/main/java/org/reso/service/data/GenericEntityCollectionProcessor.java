@@ -307,6 +307,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             }
             for (Entity product :productList)
             {
+               // The getValue should already be a String, so the toString should just pass it through, while making the following assignment simple.
                String key = product.getProperty(primaryFieldName).getValue().toString();
                HashMap<String, Object> enumValues = entities.get(key);
                CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);

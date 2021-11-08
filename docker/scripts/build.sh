@@ -39,7 +39,7 @@ fi
 
 if gradle build
 then
-  cp build/libs/RESOservice-1.0.war ./target/
+  cp build/libs/RESOservice-1.0.war ./target/core.war
   cp RESODataDictionary-1.7.metadata-report.json ./target/
 else
 
@@ -54,6 +54,7 @@ else
     exit
   else
     mvn package
+    mv ./target/RESOservice-1.0.war ./target/core.war
     cp RESODataDictionary-1.7.metadata-report.json ./target/
   fi
 fi
