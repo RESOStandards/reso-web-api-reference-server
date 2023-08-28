@@ -17,140 +17,118 @@ import java.util.HashMap;
 import static org.reso.service.servlet.RESOservlet.resourceLookup;
 import static org.reso.service.servlet.RESOservlet.getConnection;
 
-public class EnumFieldInfo extends FieldInfo
-{
-   private              String                   lookupName;
-   private final        ArrayList<EnumValueInfo> values = new ArrayList<>();
-   private final        HashMap<String,Object> valueLookup = new HashMap<>();
+public class EnumFieldInfo extends FieldInfo {
+    private String lookupName;
+    private final ArrayList<EnumValueInfo> values = new ArrayList<>();
+    private final HashMap<String, Object> valueLookup = new HashMap<>();
 
-   private static final Logger                   LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
-   private boolean isCollection = false;
-   private boolean isFlags = false;
+    private static final Logger LOG = LoggerFactory.getLogger(EnumFieldInfo.class);
+    private boolean isCollection = false;
+    private boolean isFlags = false;
 
-   private static final String LOOKUP_COLUMN_NAME = "LookupValue";
+    private static final String LOOKUP_COLUMN_NAME = "LookupValue";
 
-   public EnumFieldInfo(String fieldName, FullQualifiedName type)
-   {
-      super(fieldName, type);
-   }
+    public EnumFieldInfo(String fieldName, FullQualifiedName type) {
+        super(fieldName, type);
+    }
 
-   public void addValue(EnumValueInfo value)
-   {
-      values.add(value);
-   }
+    public void addValue(EnumValueInfo value) {
+        values.add(value);
+    }
 
-   private void loadValues()
-   {
-      ResourceInfo resource = resourceLookup.get("Lookup");
-      if (resource!=null)
-      {
-         Connection connect = getConnection();
-         String queryString = null;
-         try
-         {
-            Statement statement = connect.createStatement();
-            HashMap<String,Boolean> selectLookup = new HashMap<>();
-            selectLookup.put(LOOKUP_COLUMN_NAME, true);
+    private void loadValues() {
+        ResourceInfo resource = resourceLookup.get("Lookup");
+        if (resource != null) {
+            Connection connect = getConnection();
+            String queryString = null;
+            try {
+                Statement statement = connect.createStatement();
+                HashMap<String, Boolean> selectLookup = new HashMap<>();
+                selectLookup.put(LOOKUP_COLUMN_NAME, true);
 
-            queryString = "Select "+LOOKUP_COLUMN_NAME+" from "+resource.getTableName()+" WHERE LookupName = '"+lookupName+"'";
-            LOG.debug("Query: "+queryString);
+                queryString = "Select " + LOOKUP_COLUMN_NAME + " from " + resource.getTableName() + " WHERE LookupName = '" + lookupName + "'";
+                LOG.debug("Query: " + queryString);
 
-            ResultSet resultSet = statement.executeQuery(queryString);
-            while (resultSet.next())
-            {
-               Entity ent = CommonDataProcessing.getEntityFromRow(resultSet, resource, selectLookup);
-               Property property = ent.getProperty(LOOKUP_COLUMN_NAME);
-               String val = property.getValue().toString();
-               values.add( new EnumValueInfo(val) );
+                ResultSet resultSet = statement.executeQuery(queryString);
+                while (resultSet.next()) {
+                    Entity ent = CommonDataProcessing.getEntityFromRow(resultSet, resource, selectLookup);
+                    Property property = ent.getProperty(LOOKUP_COLUMN_NAME);
+                    String val = property.getValue().toString();
+                    values.add(new EnumValueInfo(val));
+                }
+            } catch (Exception e) {
+                LOG.info("Query: " + queryString);
+                LOG.error("Error in finding Lookup values for " + lookupName + ": " + e.getMessage());
             }
-         }
-         catch (Exception e)
-         {
-            LOG.info("Query: "+queryString);
-            LOG.error("Error in finding Lookup values for "+lookupName+": "+e.getMessage());
-         }
-      }
-   }
+        }
+    }
 
-   public ArrayList<EnumValueInfo> getValues()
-   {
-      if (values.size()==0)
-      {
-         EnumValueInfo sampleValue = new EnumValueInfo("Sample"+lookupName+"EnumValue");
-         values.add(sampleValue);
-      }
+    public ArrayList<EnumValueInfo> getValues() {
+        if (values.size() == 0) {
+            EnumValueInfo sampleValue = new EnumValueInfo("Sample" + lookupName + "EnumValue");
+            values.add(sampleValue);
+        }
 
-      return values;
-   }
+        return values;
+    }
 
-   public void setLookupName(String name) { lookupName=name; }
+    public void setLookupName(String name) {
+        lookupName = name;
+    }
 
-   public FullQualifiedName getType()
-   {
-      if (values.size()==0)
-      {
-         getValues();
-      }
-      if (values.size()>0)
-      {
-         return new FullQualifiedName("org.reso.metadata.enums." + lookupName);
-      }
+    public FullQualifiedName getType() {
+        if (values.size() == 0) {
+            getValues();
+        }
+        if (values.size() > 0) {
+            return new FullQualifiedName("org.reso.metadata.enums." + lookupName);
+        }
 
-      return super.getType();
-   }
+        return super.getType();
+    }
 
 
-   /**
-    * Accessor for lookupName
-    * @return
-    */
-   public String getLookupName()
-   {
-      return lookupName;
-   }
+    /**
+     * Accessor for lookupName
+     *
+     * @return
+     */
+    public String getLookupName() {
+        return lookupName;
+    }
 
-   public boolean isCollection()
-   {
-      return isCollection;
-   }
+    public boolean isCollection() {
+        return isCollection;
+    }
 
-   public void setCollection()
-   {
-      isCollection = true;
-   }
+    public void setCollection() {
+        isCollection = true;
+    }
 
-   public void setFlags()
-   {
-      isFlags = true;
-   }
+    public void setFlags() {
+        isFlags = true;
+    }
 
-   public boolean isFlags()
-   {
-      return isFlags;
-   }
+    public boolean isFlags() {
+        return isFlags;
+    }
 
 
-   public Object getValueOf(String enumStringValue)
-   {
-      Object value = valueLookup.get(enumStringValue);
-      if (value==null)
-      {
-         long bitValue = 1;
-         for (EnumValueInfo val: values)
-         {
-            valueLookup.put(val.getValue(),bitValue);
-            if (isFlags)
-            {
-               bitValue = bitValue * 2;
+    public Object getValueOf(String enumStringValue) {
+        Object value = valueLookup.get(enumStringValue);
+        if (value == null) {
+            long bitValue = 1;
+            for (EnumValueInfo val : values) {
+                valueLookup.put(val.getValue(), bitValue);
+                if (isFlags) {
+                    bitValue = bitValue * 2;
+                } else {
+                    bitValue = bitValue + 1;
+                }
             }
-            else
-            {
-               bitValue = bitValue+1;
-            }
-         }
-         value = valueLookup.get(enumStringValue);
-      }
+            value = valueLookup.get(enumStringValue);
+        }
 
-      return value;
-   }
+        return value;
+    }
 }
