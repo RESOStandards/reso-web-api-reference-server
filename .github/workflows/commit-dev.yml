@@ -1,4 +1,4 @@
-name: RESO Web API Reference Server Development Enviroment CI/CD
+name: RESO Web API Reference Server Development Environment CI/CD
 
 on:
   push:
@@ -15,48 +15,46 @@ jobs:
     env:
       ENVIRONMENT: dev
       DOCKER_BUILDKIT: 1
-      COMPOSE_FILE: docker-compose.yml:./optional/docker-db-compose.yml
+      COMPOSE_FILE: docker-compose.yml
       SQL_HOST: docker-mysql
       SQL_USER: root
       SQL_PASSWORD: root
       SQL_DB_DRIVER: com.mysql.cj.jdbc.Driver
       SQL_CONNECTION_STR: jdbc:mysql://docker-mysql/reso_data_dictionary_1_7?autoReconnect=true&maxReconnects=4
       CERT_REPORT_FILENAME: RESODataDictionary-1.7.metadata-report.json
-    steps:
 
-      - uses: actions/checkout@v2
+    steps:
+      - name: Check out the repository
+        uses: actions/checkout@v2
+
       - name: Set up JDK 11
         uses: actions/setup-java@v2
         with:
-          java-version: '11'
-          distribution: 'adopt'
+          java-version: "11"
+          distribution: "adopt"
 
-      - name: Run ENV setup script
+      - name: Set up Docker Build Environment
         run: |
           chmod +x ./docker/scripts/setup_build_env.sh
           ./docker/scripts/setup_build_env.sh
 
-      - name: Run build script
+      - name: Build Builder Service
         run: |
-          chmod +x ./docker/scripts/build.sh
-          ./docker/scripts/build.sh
+          chmod +x build.sh
+          ./build.sh --rebuild-builder
 
-      - name: Run docker-compose to make the images
-        run: docker-compose build
+      - name: Build OData Manager App
+        run: |
+          docker-compose build odata-manager-app
 
-      -
-        name: Login to DockerHub
+      - name: Login to DockerHub
         uses: docker/login-action@v1
         with:
           username: ${{ secrets.DOCKERHUB_USERNAME }}
           password: ${{ secrets.DOCKERHUB_TOKEN }}
-      -
-        name: Push to Dockerhub
-        id: docker_build
+
+      - name: Push OData Manager App to DockerHub
         uses: docker/build-push-action@v2
         with:
           push: true
           tags: michaelpede/reso-web-api-reference-server_odata-manager-app:latest
-# We don't really need the SQL server "build" as it's a default Docker build
-#      - name: Run docker build for the WEB API Server Database
-#        run: docker save --output database-server.tar mysql/mysql-server
