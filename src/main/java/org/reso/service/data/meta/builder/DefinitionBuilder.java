@@ -162,7 +162,9 @@ public class DefinitionBuilder
             String fieldName = (String) field.getProperty("fieldName");
             String fieldType = (String) field.getProperty("type");
             Boolean nullable = (Boolean) field.getProperty("nullable");
-            Boolean isCollection = (Boolean) field.getProperty("isCollection");
+            // Boolean isCollection = (Boolean) field.getProperty("isCollection");
+            boolean isCollection = (Boolean.TRUE.equals(field.getProperty("isCollection")));
+
             Integer maxLength = (Integer) field.getProperty("maxLength");
             Integer scale = (Integer) field.getProperty("scale");
             Integer precision = (Integer) field.getProperty("precision");

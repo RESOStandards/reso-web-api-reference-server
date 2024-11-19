@@ -82,7 +82,8 @@ public class ResourceInfo
          primaryKey = pkColumnName; //.toLowerCase();  // lowercase only needed for PostgreSQL
       }
 
-      String[] splitKey = primaryKey.split("Numeric");
+
+    String[] splitKey = primaryKey.split("Numeric");
       if (splitKey.length>=1)
          primaryKey = splitKey[0];
 
