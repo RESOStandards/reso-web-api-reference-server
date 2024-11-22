@@ -1,10 +1,7 @@
-# Automatic overrides for local development. DockerHub builds must specify "-f docker-compose.yml" explicitly.
 services:
   odata-manager-app:
     environment:
-      - JPDA_SUSPEND=y # Enable debugging for development
-    expose:
-      - "8000"
+      - ENABLE_DEBUG=true # Enable debugging for development
     ports:
       - "8000:8000" # Map debugging port for development
-      - "8080:8080"
+      - "8080:8080" # Keep the application port open for local use

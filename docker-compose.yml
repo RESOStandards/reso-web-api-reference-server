@@ -2,10 +2,8 @@ services:
   odata-manager-app:
     restart: on-failure
     build: ./
-    expose:
-      - "8080"
     ports:
-      - "8080:8080"
+      - "8080:8080" # Only expose the application port for production
     environment:
       - SQL_HOST
       - SQL_USER
@@ -13,7 +11,7 @@ services:
       - SQL_CONNECTION_STR
       - SQL_DB_DRIVER
       - CERT_REPORT_FILENAME
-      - JPDA_SUSPEND=n # Ensure debugging is off for production
+      - ENABLE_DEBUG=false # Ensure debugging is off for production
     volumes:
       - ./target:/usr/local/tomcat/webapps
     depends_on:

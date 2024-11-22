@@ -22,6 +22,7 @@ jobs:
       SQL_DB_DRIVER: com.mysql.cj.jdbc.Driver
       SQL_CONNECTION_STR: jdbc:mysql://docker-mysql/reso_data_dictionary_1_7?autoReconnect=true&maxReconnects=4
       CERT_REPORT_FILENAME: RESODataDictionary-1.7.metadata-report.json
+      ENABLE_DEBUG: false
 
     steps:
       - name: Check out the repository
