@@ -20,8 +20,7 @@ services:
   docker-mariadb:
     restart: always
     container_name: docker-mariadb
-    image: mariadb:latest # Use the official MariaDB image
-    command: --default-authentication-plugin=mysql_native_password
+    image: mariadb:latest
     environment:
       MYSQL_DATABASE: reso_data_dictionary_1_7
       MYSQL_ROOT_PASSWORD: root
