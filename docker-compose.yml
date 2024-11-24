@@ -15,12 +15,12 @@ services:
     volumes:
       - ./target:/usr/local/tomcat/webapps
     depends_on:
-      - docker-mysql
+      - docker-mariadb
 
-  docker-mysql:
+  docker-mariadb:
     restart: always
-    container_name: docker-mysql
-    image: mysql/mysql-server
+    container_name: docker-mariadb
+    image: mariadb:latest # Use the official MariaDB image
     command: --default-authentication-plugin=mysql_native_password
     environment:
       MYSQL_DATABASE: reso_data_dictionary_1_7
