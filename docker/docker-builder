@@ -15,4 +15,4 @@ RUN apt-get update && apt-get install -y wget openjdk-8-jdk curl pip maven docke
 # CMD sh /usr/src/app/docker/scripts/startup.sh
 
 # Uncomment if Builder container will not run
-# CMD ["tail", "-f", "/dev/null"]
+CMD ["tail", "-f", "/dev/null"]
