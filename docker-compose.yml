@@ -34,3 +34,16 @@ services:
       interval: 2s
       timeout: 20s
       retries: 10
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    platform: linux/amd64
+    restart: always
+    environment:
+      PMA_HOST: docker-mariadb
+      PMA_USER: root
+      PMA_PASSWORD: root
+    ports:
+      - "6034:80"
+    depends_on:
+      - docker-mariadb
