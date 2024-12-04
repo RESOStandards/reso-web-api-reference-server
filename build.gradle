@@ -37,6 +37,8 @@ dependencies {
     testImplementation libs.org.junit.jupiter.junit.jupiter.api
     testImplementation libs.org.junit.jupiter.junit.jupiter.engine
 
+    implementation libs.org.mongodb.mongodb.jdbc
+
     // Compile-only dependencies
     compileOnly libs.javax.servlet.javax.servlet.api
 }

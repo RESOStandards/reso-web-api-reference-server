@@ -7,6 +7,7 @@ com-fasterxml-jackson-core-jackson-databind = "2.11.1"
 com-google-code-gson-gson = "2.8.7"
 javax-servlet-javax-servlet-api = "3.1.0"
 mysql-mysql-connector-java = "8.0.23"
+org-mongodb-mongodb-jdbc = "2.1.0"
 org-apache-olingo-odata-commons-api = "4.8.0"
 org-apache-olingo-odata-commons-core = "4.8.0"
 org-apache-olingo-odata-server-api = "4.8.0"
@@ -23,6 +24,7 @@ com-fasterxml-jackson-core-jackson-databind = { module = "com.fasterxml.jackson.
 com-google-code-gson-gson = { module = "com.google.code.gson:gson", version.ref = "com-google-code-gson-gson" }
 javax-servlet-javax-servlet-api = { module = "javax.servlet:javax.servlet-api", version.ref = "javax-servlet-javax-servlet-api" }
 mysql-mysql-connector-java = { module = "mysql:mysql-connector-java", version.ref = "mysql-mysql-connector-java" }
+org-mongodb-mongodb-jdbc = { module = "org.mongodb:mongodb-jdbc", version.ref = "org-mongodb-mongodb-jdbc" }
 org-apache-olingo-odata-commons-api = { module = "org.apache.olingo:odata-commons-api", version.ref = "org-apache-olingo-odata-commons-api" }
 org-apache-olingo-odata-commons-core = { module = "org.apache.olingo:odata-commons-core", version.ref = "org-apache-olingo-odata-commons-core" }
 org-apache-olingo-odata-server-api = { module = "org.apache.olingo:odata-server-api", version.ref = "org-apache-olingo-odata-server-api" }
