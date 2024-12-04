@@ -90,6 +90,10 @@ public class RESOservlet extends HttpServlet
          connect = DriverManager
                   .getConnection(dbConnString,dbUser,dbPwd);
 
+         Class.forName("com.mongodb.jdbc.MongoDriver");
+         java.util.Properties p = new java.util.Properties();
+         p.setProperty("database", "reso");
+         connect = DriverManager.getConnection("jdbc:mongodb://mappingclient:e1p2vmbSRHADVv6s@federateddatabaseinstance0-aeucj.a.query.mongodb.net/reso?ssl=true&authSource=admin", p);
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in connecting to the database", e);
