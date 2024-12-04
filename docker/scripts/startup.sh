@@ -31,10 +31,27 @@ fi
 
 
 # Run Maven to build the project
-if mvn install; then
-  mv ./target/RESOservice-1.0.war ./target/core.war
-  cp RESODataDictionary-1.7.metadata-report.json ./target/
+#if mvn install; then
+if ./gradlew war; then
+#  mv ./target/RESOservice-1.0.war ./target/core.war
+#  cp RESODataDictionary-1.7.metadata-report.json ./target/
+  if [ -f "./build/libs/RESOservice-1.0.war" ]; then
+      mv ./build/libs/RESOservice-1.0.war ./build/libs/core.war
+      echo "Moved RESOservice-1.0.war to core.war"
+    else
+      echo "WAR file not found: ./build/libs/RESOservice-1.0.war"
+      exit 1
+    fi
+
+    # Copy the JSON file (if it exists)
+    if [ -f "RESODataDictionary-1.7.metadata-report.json" ]; then
+      cp RESODataDictionary-1.7.metadata-report.json ./build/libs/
+      echo "Copied RESODataDictionary-1.7.metadata-report.json to build/libs/"
+    else
+      echo "JSON file not found: RESODataDictionary-1.7.metadata-report.json"
+      exit 1
+    fi
 else
-  echo "Maven build failed"
+  echo "Gradle build failed"
   exit 1
 fi
