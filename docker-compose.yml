@@ -5,10 +5,14 @@ services:
     ports:
       - "8080:8080" # Only expose the application port for production
     environment:
-      - SQL_HOST
-      - SQL_USER
-      - SQL_PASSWORD
-      - SQL_CONNECTION_STR
+      # - SQL_HOST
+      # - SQL_USER
+      # - SQL_PASSWORD
+      # - SQL_CONNECTION_STR
+      - SQL_CONNECTION_STR=jdbc:mongodb://mappingclient:e1p2vmbSRHADVv6s@federateddatabaseinstance0-aeucj.a.query.mongodb.net/reso?ssl=true&authSource=admin
+      - SQL_HOST=mongo
+      - SQL_USER=root
+      - SQL_PASSWORD=root
       - SQL_DB_DRIVER
       - CERT_REPORT_FILENAME
       - ENABLE_DEBUG=false # Ensure debugging is off for production
@@ -24,7 +28,9 @@ services:
       - 27017:27017
     environment:
       MONGO_INITDB_ROOT_USERNAME: root
-      MONGO_INITDB_ROOT_PASSWORD: example
+      MONGO_INITDB_ROOT_PASSWORD: root
+    volumes:
+      - ./mongo-init-scripts:/docker-entrypoint-initdb.d
 
   mongo-express:
     image: mongo-express
@@ -33,8 +39,8 @@ services:
       - 8081:8081
     environment:
       ME_CONFIG_MONGODB_ADMINUSERNAME: root
-      ME_CONFIG_MONGODB_ADMINPASSWORD: example
-      ME_CONFIG_MONGODB_URL: mongodb://root:example@mongo:27017/
+      ME_CONFIG_MONGODB_ADMINPASSWORD: root
+      ME_CONFIG_MONGODB_URL: mongodb://root:root@mongo:27017/
       ME_CONFIG_BASICAUTH: false
 
   docker-mariadb:

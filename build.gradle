@@ -27,6 +27,8 @@ dependencies {
     api libs.org.slf4j.slf4j.api
     api libs.com.fasterxml.jackson.core.jackson.annotations
     api libs.com.google.code.gson.gson
+    api libs.org.mongodb.mongodb.jdbc
+
 
     // Runtime-only dependencies
     runtimeOnly libs.mysql.mysql.connector.java
@@ -36,8 +38,6 @@ dependencies {
     // Test dependencies
     testImplementation libs.org.junit.jupiter.junit.jupiter.api
     testImplementation libs.org.junit.jupiter.junit.jupiter.engine
-
-    implementation libs.org.mongodb.mongodb.jdbc
 
     // Compile-only dependencies
     compileOnly libs.javax.servlet.javax.servlet.api
