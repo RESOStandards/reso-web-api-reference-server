@@ -1,6 +1,11 @@
 package org.reso.service.data;
 
 
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.jdbc.MongoConnection;
 import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
@@ -20,6 +25,7 @@ import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.bson.Document;
 import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.data.meta.EnumFieldInfo;
 import org.reso.service.data.meta.EnumValueInfo;
@@ -33,6 +39,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.reso.service.servlet.RESOservlet.resourceLookup;
@@ -239,7 +247,11 @@ public class GenericEntityProcessor implements EntityProcessor
          }
       }
 
-      saveData(resource, mappedObj);
+      if(connect instanceof com.mongodb.jdbc.MongoConnection){
+          saveDataMongo(resource, mappedObj);
+      } else {
+          saveData(resource, mappedObj);
+      }
       saveEnumData(resource, enumValues);
 
       // 3. serialize the response (we have to return the created entity)
@@ -313,12 +325,62 @@ public class GenericEntityProcessor implements EntityProcessor
       // Result set get the result of the SQL query
    }
 
-   private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues)
+    private void saveDataMongo(ResourceInfo resource, HashMap<String, Object> mappedObj) {
+        Map<String, String> env = System.getenv();
+        String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
+
+        try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
+            MongoDatabase database = mongoClient.getDatabase("reso");
+            MongoCollection<Document> collection = database.getCollection(resource.getTableName());
+
+            Document document = new Document();
+
+            ArrayList<FieldInfo> fieldList = resource.getFieldList();
+            HashMap<String, FieldInfo> fieldLookup = new HashMap<>();
+
+            for (FieldInfo field : fieldList) {
+                fieldLookup.put(field.getFieldName(), field);
+            }
+
+            for (Map.Entry<String, Object> entry : mappedObj.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                FieldInfo field = fieldLookup.get(key);
+                if (value != null) {
+                    if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName())) {
+                        document.append(key, value.toString());
+                    } else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName())) {
+                        // Assuming the date is in ISO format or needs to be converted to a Date object
+                        try {
+                            document.append(key, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(value.toString()));
+                        } catch (ParseException e) {
+                            LOG.error("Date parsing error", e);
+                        }
+                    } else {
+                        document.append(key, value);
+                    }
+                } else {
+                    document.append(key, null);
+                }
+            }
+            try {
+                collection.insertOne(document);
+            } catch (Exception e) {
+                LOG.error("Error inserting document into MongoDB", e);
+            }
+        }
+    }
+
+    private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues)
    {
       for (String key: enumValues.keySet() )
       {
          Object value = enumValues.get(key);
-         saveEnumData(resource, key, value);
+         if(connect instanceof com.mongodb.jdbc.MongoConnection)
+            saveEnumDataMongo(resource,key,value);
+         else
+            saveEnumData(resource, key, value);
       }
    }
 
@@ -382,6 +444,39 @@ public class GenericEntityProcessor implements EntityProcessor
 
    }
 
+
+    private void saveEnumDataMongo(ResourceInfo resource, String lookupEnumField, Object values) {
+        Map<String, String> env = System.getenv();
+        String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
+
+        try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
+            MongoDatabase database = mongoClient.getDatabase("reso"); // Specify your database name
+            MongoCollection<Document> collection = database.getCollection("lookup_value"); // Adjust the collection name as needed
+
+            List<Object> valueList = new ArrayList<>();
+            if (values instanceof List) {
+                valueList.addAll((List) values);
+            } else {
+                valueList.add(values);
+            }
+
+            List<Document> documents = new ArrayList<>();
+            for (Object value : valueList) {
+                Document doc = new Document()
+                        .append("FieldName", lookupEnumField)
+                        .append("LookupKey", value.toString());
+                documents.add(doc);
+            }
+
+            try {
+                if (!documents.isEmpty()) {
+                    collection.insertMany(documents);
+                }
+            } catch (Exception e) {
+                LOG.error("Error inserting documents into MongoDB", e);
+            }
+        }
+    }
 
    @Override public void updateEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType requestFormat, ContentType responseFormat)
             throws ODataApplicationException, ODataLibraryException
