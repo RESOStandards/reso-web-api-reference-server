@@ -125,7 +125,7 @@ private String findMongoPrimaryKey(MongoConnection connect) {
    try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
       // Access database and collection
       MongoDatabase database = mongoClient.getDatabase("reso");
-      MongoCollection<Document> collection = database.getCollection("Property");
+      MongoCollection<Document> collection = database.getCollection(tableName);
 
 //      Uncomment to query Lookup endpoint
 //      MongoDatabase database = mongoClient.getDatabase("reso");
@@ -155,7 +155,7 @@ private String findMongoPrimaryKey(MongoConnection connect) {
       }
 
       if (primaryKey == null) {
-         LOG.warn("No unique index found for collection: Lookup");
+         LOG.warn("No unique index found for collection: "+tableName);
       }
    } catch (Exception e) {
       LOG.error("Error fetching unique index with sync driver: " + e.getMessage(), e);
