@@ -27,6 +27,7 @@ import org.slf4j.LoggerFactory;
 import java.sql.*;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 public class ResourceInfo
 {
@@ -114,41 +115,54 @@ public class ResourceInfo
 
    }
 
-   private String findMongoPrimaryKey(MongoConnection connect) {
-      String primaryKey = null;
+private String findMongoPrimaryKey(MongoConnection connect) {
+   String primaryKey = null;
 
-      try {
-         // Get metadata from the connection
-         MongoDatabaseMetaData metadata = (MongoDatabaseMetaData) connect.getMetaData();
+   // MongoDB connection URI
+   Map<String, String> env = System.getenv();
+   String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
 
-         // Fetch indexes using getIndexInfo; assumes the database (catalog) is specified
-         MongoResultSet indexes = (MongoResultSet) metadata.getIndexInfo("reso", null, getTableName(), true, false);
+   try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
+      // Access database and collection
+      MongoDatabase database = mongoClient.getDatabase("reso");
+      MongoCollection<Document> collection = database.getCollection("Property");
 
-         while (indexes.next()) {
-            // Retrieve whether the index is unique
-            boolean isUnique = !indexes.getBoolean("NON_UNIQUE");
+//      Uncomment to query Lookup endpoint
+//      MongoDatabase database = mongoClient.getDatabase("reso");
+//      MongoCollection<Document> collection = database.getCollection("Property");
+      ArrayList<Document> indexDocs = collection.listIndexes().into(new ArrayList<Document>());
 
-            // Retrieve the name of the indexed column
-            String indexedColumn = indexes.getString("COLUMN_NAME");
+      // List indexes and iterate over them
+      for (Document indexDoc : indexDocs) {
+         LOG.info("Index Document: " + indexDoc.toJson());
 
-            // Log and store the first unique index
-            if (isUnique && indexedColumn != null) {
-               primaryKey = indexedColumn;
-               LOG.info("MongoDB Unique Index Found: Column: " + primaryKey);
+         // Check if the index is unique
+         Boolean isUnique = indexDoc.getBoolean("unique", false);
+
+         // Get the indexed field(s)
+         Document keyDoc = (Document) indexDoc.get("key");
+         if (keyDoc != null && isUnique) {
+            for (String indexedField : keyDoc.keySet()) {
+               primaryKey = indexedField; // Get the first unique indexed field
+               LOG.info("Unique Index Found: Field = " + primaryKey);
                break; // Exit loop after finding the first unique index
             }
          }
 
-         if (primaryKey == null) {
-            LOG.warn("No unique index found for collection: " + getTableName());
+         if (primaryKey != null) {
+            break; // Exit outer loop once a unique index is found
          }
-
-      } catch (SQLException e) {
-         LOG.error("Error fetching MongoDB primary key from JDBC metadata: " + e.getMessage(), e);
       }
 
-      return primaryKey;
+      if (primaryKey == null) {
+         LOG.warn("No unique index found for collection: Lookup");
+      }
+   } catch (Exception e) {
+      LOG.error("Error fetching unique index with sync driver: " + e.getMessage(), e);
    }
+
+   return primaryKey;
+}
 
 
    public Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates)

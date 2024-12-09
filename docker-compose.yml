@@ -5,14 +5,11 @@ services:
     ports:
       - "8080:8080" # Only expose the application port for production
     environment:
-      # - SQL_HOST
-      # - SQL_USER
-      # - SQL_PASSWORD
-      # - SQL_CONNECTION_STR
-      - SQL_CONNECTION_STR=jdbc:mongodb://mappingclient:e1p2vmbSRHADVv6s@federateddatabaseinstance0-aeucj.a.query.mongodb.net/reso?ssl=true&authSource=admin
-      - SQL_HOST=mongo
-      - SQL_USER=root
-      - SQL_PASSWORD=root
+      - MONGO_SYNC_CONNECTION_STR
+      - SQL_CONNECTION_STR
+      - SQL_HOST
+      - SQL_USER
+      - SQL_PASSWORD
       - SQL_DB_DRIVER
       - CERT_REPORT_FILENAME
       - ENABLE_DEBUG=false # Ensure debugging is off for production
