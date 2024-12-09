@@ -63,9 +63,6 @@ public class RESOservlet extends HttpServlet
 //      this.validator.addProvider(new BasicAuthProvider());  // We're using this for the token auth.  Only use here for easy browser testing.
       this.validator.addProvider(new BearerAuthProvider());
 
-      String dbHost = env.get("SQL_HOST");
-      String dbUser = env.get("SQL_USER");
-      String dbPwd = env.get("SQL_PASSWORD");
       String dbConnString = env.get("SQL_CONNECTION_STR");
       String dbDriverStr = env.get("SQL_DB_DRIVER");
 
@@ -84,19 +81,13 @@ public class RESOservlet extends HttpServlet
       }
 
       try {
-//         Class.forName(dbDriverStr).newInstance();
-//         LOG.debug("looking to connect to " + dbConnString);
-//
-//         connect = DriverManager
-//                  .getConnection(dbConnString,dbUser,dbPwd);
+         Class.forName(dbDriverStr).newInstance();
+         LOG.debug("looking to connect to " + dbConnString);
 
-         Class.forName("com.mongodb.jdbc.MongoDriver").newInstance();
-         LOG.debug("looking to connect to " + "com.mongodb.jdbc.MongoDriver");
+         connect = DriverManager
+                  .getConnection(dbConnString);
 
-         java.util.Properties p = new java.util.Properties();
-         p.setProperty("database", "reso");
-         connect = DriverManager.getConnection("jdbc:mongodb://mappingclient:e1p2vmbSRHADVv6s@federateddatabaseinstance0-aeucj.a.query.mongodb.net/reso?ssl=true&authSource=admin", p);
-         LOG.info("Connected to the database!", connect);
+            LOG.info("Connected to the database!", connect);
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in connecting to the database", e);
