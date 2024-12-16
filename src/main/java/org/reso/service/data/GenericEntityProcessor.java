@@ -234,26 +234,23 @@ public class GenericEntityProcessor implements EntityProcessor
       // 2.2 do the creation in backend, which returns the newly created entity
       HashMap<String, Object> mappedObj = CommonDataProcessing.translateEntityToMap(requestEntity);
 
-      List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
-      HashMap<String, Object>  enumValues = new HashMap<>();
-      for (FieldInfo field: enumFields)
-      {
-         // We remove all entities that are collections to save to the lookup_value table separately. @TODO: save these values
-         if (field.isCollection())
-         {
-            String fieldName = field.getFieldName();
-            Object value = mappedObj.remove(fieldName);
-            enumValues.put(fieldName, value);
-         }
-      }
-
-      if(connect instanceof com.mongodb.jdbc.MongoConnection){
-          saveDataMongo(resource, mappedObj);
-      } else {
-          saveData(resource, mappedObj);
-      }
-      saveEnumData(resource, enumValues);
+        List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
+        HashMap<String, Object> enumValues = new HashMap<>();
+        for (FieldInfo field : enumFields) {
+            // We remove all entities that are collections to save to the lookup_value table separately. @TODO: save these values
+            if (field.isCollection()) {
+                String fieldName = field.getFieldName();
+                Object value = mappedObj.remove(fieldName);
                 if (!((List) value).isEmpty())
+                    enumValues.put(fieldName, value);
+            }
+        }
+        if (connect instanceof com.mongodb.jdbc.MongoConnection) {
+            saveDataMongo(resource, mappedObj);
+        } else {
+            saveData(resource, mappedObj);
+        }
+        saveEnumData(resource, enumValues, (String) mappedObj.get(resource.getPrimaryKeyName()));
 
       // 3. serialize the response (we have to return the created entity)
       ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
