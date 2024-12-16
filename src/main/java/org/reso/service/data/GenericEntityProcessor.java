@@ -253,6 +253,7 @@ public class GenericEntityProcessor implements EntityProcessor
           saveData(resource, mappedObj);
       }
       saveEnumData(resource, enumValues);
+                if (!((List) value).isEmpty())
 
       // 3. serialize the response (we have to return the created entity)
       ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
@@ -347,16 +348,33 @@ public class GenericEntityProcessor implements EntityProcessor
                 Object value = entry.getValue();
 
                 FieldInfo field = fieldLookup.get(key);
+                FullQualifiedName fieldType = field.getType();
                 if (value != null) {
-                    if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName())) {
+                    if (fieldType.equals(EdmPrimitiveTypeKind.String.getFullQualifiedName())) {
                         document.append(key, value.toString());
-                    } else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName())) {
+                    } else if (fieldType.equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName())) {
                         // Assuming the date is in ISO format or needs to be converted to a Date object
                         try {
                             document.append(key, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(value.toString()));
                         } catch (ParseException e) {
                             LOG.error("Date parsing error", e);
                         }
+                    } else if (field instanceof EnumFieldInfo) {
+//                        EnumFieldInfo enumField = (EnumFieldInfo) field;
+//                        if (value instanceof List) {
+//                            String[] values = new String[((List<?>) value).size()];
+//                            if (value instanceof List) {
+//                                List<String> valuesArray = new ArrayList<>();
+//                                ((List<?>) value).forEach(item -> {
+//                                    valuesArray.add(((EnumFieldInfo) field).getValues().get(Integer.parseInt(item.toString())).getValue());
+//                                });
+//                                document.append(key, valuesArray);
+//                            } else {
+//                                document.append(key, ((EnumFieldInfo) field).getValues().get(Integer.parseInt(value.toString())).getValue());
+//                            }
+//                        } else {
+//                            document.append(key, ((EnumFieldInfo) field).getValues().get(Integer.parseInt(value.toString())).getValue());
+//                        }
                     } else {
                         document.append(key, value);
                     }
@@ -364,25 +382,34 @@ public class GenericEntityProcessor implements EntityProcessor
                     document.append(key, null);
                 }
             }
-            try {
-                collection.insertOne(document);
-            } catch (Exception e) {
-                LOG.error("Error inserting document into MongoDB", e);
-            }
+            collection.insertOne(document);
         }
     }
 
-    private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues)
-   {
-      for (String key: enumValues.keySet() )
-      {
-         Object value = enumValues.get(key);
-         if(connect instanceof com.mongodb.jdbc.MongoConnection)
-            saveEnumDataMongo(resource,key,value);
-         else
-            saveEnumData(resource, key, value);
-      }
-   }
+    private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues, String resourceRecordKey) {
+        HashMap<String, HashMap<String, Object>> lookupCache = LookupDefinition.getLookupCache();
+        for (String key : enumValues.keySet()) {
+            EnumFieldInfo enumFieldInfo = resource.getFieldList().stream()
+                    .filter(field -> field.getFieldName().equals(key))
+                    .map(field -> (EnumFieldInfo) field)
+                    .findFirst()
+                    .orElse(null);
+            Object value = enumValues.get(key);
+            if (value instanceof List) {
+                List<String> valuesArray = new ArrayList<>();
+                ((List<?>) value).forEach(item -> {
+                    String finalValue = enumFieldInfo.getValues().get(Integer.parseInt(item.toString())).getValue();
+                });
+            } else {
+                String finalValue = enumFieldInfo.getValues().get(Integer.parseInt(value.toString())).getValue();
+                lookupCache.get(finalValue);
+            }
+            if (connect instanceof com.mongodb.jdbc.MongoConnection)
+                saveEnumDataMongo(resource, key, value, resourceRecordKey);
+            else
+                saveEnumData(resource, key, value, resourceRecordKey);
+        }
+    }
 
 
    /**
@@ -464,6 +491,8 @@ public class GenericEntityProcessor implements EntityProcessor
             for (Object value : valueList) {
                 Document doc = new Document()
                         .append("FieldName", lookupEnumField)
+                        .append("ResourceName", resource.getResourcesName())
+                        .append("ResourceRecordKey", resourceRecordKey)
                         .append("LookupKey", value.toString());
                 documents.add(doc);
             }

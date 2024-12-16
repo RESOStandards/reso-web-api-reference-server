@@ -293,8 +293,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
          if (productList.size()>0 && resourceRecordKeys.size()>0 && enumFields.size()>0)
          {
-            queryString = "select * from lookup_value";
-            queryString = queryString + " WHERE ResourceRecordKey in (\"" + String.join("','", resourceRecordKeys ) + "\")";
+            queryString = "SELECT * FROM lookup_value";
+            queryString += " WHERE ResourceRecordKey IN ('" + String.join("', '", resourceRecordKeys) + "')";
 
             LOG.info("SQL Query: "+queryString);
             resultSet = statement.executeQuery(queryString);
@@ -310,7 +310,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                // The getValue should already be a String, so the toString should just pass it through, while making the following assignment simple.
                String key = product.getProperty(primaryFieldName).getValue().toString();
                HashMap<String, Object> enumValues = entities.get(key);
-               CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+               if(enumValues != null)
+                  CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
             }
          }
 
