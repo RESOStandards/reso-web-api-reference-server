@@ -245,7 +245,7 @@ public class CommonDataProcessing
          return;
       }
 
-      Object val = field.getValueOf(lookup.get("LegacyOdataValue").toString() );
+      Object val = field.getValueOf(lookup.get("LookupValue").toString() );
       if (field.isCollection())
       {
          Object possibleList = entity.get(fieldName);
