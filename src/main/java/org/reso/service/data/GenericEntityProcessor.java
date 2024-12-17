@@ -237,13 +237,14 @@ public class GenericEntityProcessor implements EntityProcessor
         List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
         HashMap<String, Object> enumValues = new HashMap<>();
         for (FieldInfo field : enumFields) {
+            EnumFieldInfo enumField = (EnumFieldInfo) field;
             // We remove all entities that are collections to save to the lookup_value table separately. @TODO: save these values
-            if (field.isCollection()) {
-                String fieldName = field.getFieldName();
-                Object value = mappedObj.remove(fieldName);
-                if (!((List) value).isEmpty())
-                    enumValues.put(fieldName, value);
-            }
+            String fieldName = field.getFieldName();
+            Object value = mappedObj.remove(fieldName);
+            if (field.isCollection() && !((List) value).isEmpty())
+                enumValues.put(fieldName, Arrays.asList(((List<Long>) value).stream().map(x -> enumField.getKeyByIndex((int)(long)x)).toArray()));
+            else if (!field.isCollection() && value != null)
+                enumValues.put(fieldName, enumField.getKeyByIndex((int)(long)(Long)value));
         }
         if (connect instanceof com.mongodb.jdbc.MongoConnection) {
             saveDataMongo(resource, mappedObj);
@@ -314,7 +315,7 @@ public class GenericEntityProcessor implements EntityProcessor
 
          queryString = queryString+" ("+String.join(",",columnNames)+") values ("+String.join(",",columnValues)+")";
 
-         //boolean success = statement.execute(queryString);
+         boolean success = statement.execute(queryString);
       }
       catch (SQLException e)
       {
@@ -356,22 +357,6 @@ public class GenericEntityProcessor implements EntityProcessor
                         } catch (ParseException e) {
                             LOG.error("Date parsing error", e);
                         }
-                    } else if (field instanceof EnumFieldInfo) {
-//                        EnumFieldInfo enumField = (EnumFieldInfo) field;
-//                        if (value instanceof List) {
-//                            String[] values = new String[((List<?>) value).size()];
-//                            if (value instanceof List) {
-//                                List<String> valuesArray = new ArrayList<>();
-//                                ((List<?>) value).forEach(item -> {
-//                                    valuesArray.add(((EnumFieldInfo) field).getValues().get(Integer.parseInt(item.toString())).getValue());
-//                                });
-//                                document.append(key, valuesArray);
-//                            } else {
-//                                document.append(key, ((EnumFieldInfo) field).getValues().get(Integer.parseInt(value.toString())).getValue());
-//                            }
-//                        } else {
-//                            document.append(key, ((EnumFieldInfo) field).getValues().get(Integer.parseInt(value.toString())).getValue());
-//                        }
                     } else {
                         document.append(key, value);
                     }
@@ -384,23 +369,8 @@ public class GenericEntityProcessor implements EntityProcessor
     }
 
     private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues, String resourceRecordKey) {
-        HashMap<String, HashMap<String, Object>> lookupCache = LookupDefinition.getLookupCache();
         for (String key : enumValues.keySet()) {
-            EnumFieldInfo enumFieldInfo = resource.getFieldList().stream()
-                    .filter(field -> field.getFieldName().equals(key))
-                    .map(field -> (EnumFieldInfo) field)
-                    .findFirst()
-                    .orElse(null);
             Object value = enumValues.get(key);
-            if (value instanceof List) {
-                List<String> valuesArray = new ArrayList<>();
-                ((List<?>) value).forEach(item -> {
-                    String finalValue = enumFieldInfo.getValues().get(Integer.parseInt(item.toString())).getValue();
-                });
-            } else {
-                String finalValue = enumFieldInfo.getValues().get(Integer.parseInt(value.toString())).getValue();
-                lookupCache.get(finalValue);
-            }
             if (connect instanceof com.mongodb.jdbc.MongoConnection)
                 saveEnumDataMongo(resource, key, value, resourceRecordKey);
             else
@@ -426,50 +396,46 @@ public class GenericEntityProcessor implements EntityProcessor
     * +--------------------------+------------+------+-----+---------------------+-------------------------------+
     * @param resource
     * @param values
+    * @param resourceRecordKey
     */
-   private void saveEnumData(ResourceInfo resource, String lookupEnumField, Object values)
-   {
-      String queryString = "insert into lookup_value";
+    private void saveEnumData(ResourceInfo resource, String lookupEnumField, Object values, String resourceRecordKey) {
+       String queryString = "INSERT INTO lookup_value (FieldName, LookupKey, ResourceName, ResourceRecordKey) VALUES (?, ?, ?, ?)";
 
-      /**
-       String value = resultSet.getString("LookupKey");
-       String fieldName = resultSet.getString("FieldName");
-       String resourceRecordKey = resultSet.getString("ResourceRecordKey");
-       */
+       try {
+           connect.setAutoCommit(false);  // Use transaction control
+           PreparedStatement statement = connect.prepareStatement(queryString);
 
-      try
-      {
-         Statement statement = connect.createStatement();
-         List<String> columnNames = Arrays.asList("FieldName","LookupKey");
+           List<Object> valueList = new ArrayList<>();
 
-         ArrayList valueArray;
+           if (values instanceof List) {
+               valueList.addAll((List) values);
+           } else {
+               valueList.add(values);
+           }
 
-         if (values instanceof ArrayList)
-         {
-            valueArray = (ArrayList) values;
-         }
-         else
-         {
-            ArrayList temp = new ArrayList();
-            temp.add(values);
-            valueArray = temp;
-         }
+           for (Object value : valueList) {
+               statement.setString(1, lookupEnumField);
+               statement.setString(2, value.toString());
+               statement.setString(3, resource.getResourcesName());
+               statement.setString(4, resourceRecordKey);
 
-         for (Object value : valueArray)
-         {
-            ArrayList<String> columnValues = new ArrayList(Arrays.asList(lookupEnumField,value.toString()));
-         }
+               statement.addBatch();  // Add this prepared statement to the batch
+           }
 
-      }
-      catch (SQLException e)
-      {
-         LOG.error(e.getMessage());
-      }
-
+           statement.executeBatch();  // Execute all the batched statements
+           connect.commit();  // Commit transaction
+           statement.close(); // Close the statement after commit
+       } catch (SQLException e) {
+           LOG.error("Error inserting data into SQL database", e);
+           try {
+               if (connect != null) connect.rollback();  // Roll back transaction in case of error
+           } catch (SQLException ex) {
+               LOG.error("Error during transaction rollback", ex);
+           }
+       }
    }
 
-
-    private void saveEnumDataMongo(ResourceInfo resource, String lookupEnumField, Object values) {
+   private void saveEnumDataMongo(ResourceInfo resource, String lookupEnumField, Object values, String resourceRecordKey) {
         Map<String, String> env = System.getenv();
         String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
 
