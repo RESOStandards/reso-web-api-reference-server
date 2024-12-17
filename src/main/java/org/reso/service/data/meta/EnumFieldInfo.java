@@ -129,6 +129,15 @@ public class EnumFieldInfo extends FieldInfo
       return isFlags;
    }
 
+   public String getKeyByIndex(int index)
+   {
+      if (index<values.size())
+      {
+         return values.get(index).getKey(lookupName);
+      }
+
+      return null;
+   }
 
    public Object getValueOf(String enumStringValue)
    {
@@ -136,16 +145,18 @@ public class EnumFieldInfo extends FieldInfo
       if (value==null)
       {
          long bitValue = 1;
+         long gitValue = 0;
          for (EnumValueInfo val: values)
          {
-            valueLookup.put(val.getValue(),bitValue);
             if (isFlags)
             {
+               valueLookup.put(val.getValue(),bitValue);
                bitValue = bitValue * 2;
             }
             else
             {
-               bitValue = bitValue+1;
+               valueLookup.put(val.getValue(),gitValue);
+               gitValue = gitValue+1;
             }
          }
          value = valueLookup.get(enumStringValue);

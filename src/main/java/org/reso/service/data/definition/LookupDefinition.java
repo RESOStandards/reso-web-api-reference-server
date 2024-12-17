@@ -18,6 +18,7 @@ public class LookupDefinition extends ResourceInfo
 {
    private static ArrayList<FieldInfo> fieldList = null;
    private static HashMap<String, HashMap<String,Object>> lookupCache = new HashMap<>();
+   private static HashMap<String, HashMap<String,String>> reverseLookupCache = new HashMap<>();
 
    public LookupDefinition()
    {
@@ -88,6 +89,13 @@ public class LookupDefinition extends ResourceInfo
       String pKey = resource.getPrimaryKeyName();
       for (HashMap<String, Object> lookup: lookups)
       {
+         HashMap<String,String> reverseKey = reverseLookupCache.get(lookup.get("LookupName").toString());
+         if(reverseKey==null)
+         {
+            reverseKey =new HashMap<>();
+                    reverseLookupCache.put(lookup.get("LookupName").toString(),reverseKey);
+         }
+         reverseKey.put(lookup.get("LookupValue").toString(),lookup.get("LookupKey").toString());
          lookupCache.put(lookup.get(pKey).toString(),lookup);
       }
    }
@@ -97,4 +105,8 @@ public class LookupDefinition extends ResourceInfo
       return LookupDefinition.lookupCache;
    }
 
+    public static HashMap<String, HashMap<String,String>> getReverseLookupCache()
+    {
+        return LookupDefinition.reverseLookupCache;
+    }
 }

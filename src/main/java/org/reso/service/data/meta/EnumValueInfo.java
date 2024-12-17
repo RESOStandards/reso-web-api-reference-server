@@ -3,6 +3,7 @@ package org.reso.service.data.meta;
 
 import org.apache.olingo.commons.api.edm.provider.CsdlAnnotation;
 import org.apache.olingo.commons.api.edm.provider.annotation.CsdlConstantExpression;
+import org.reso.service.data.definition.LookupDefinition;
 
 import java.util.ArrayList;
 
@@ -21,6 +22,12 @@ public class EnumValueInfo
    {
       return value;
    }
+
+    public String getKey(String fieldName)
+    {
+
+        return LookupDefinition.getReverseLookupCache().get(fieldName).get(value);
+    }
 
    public void addAnnotation(String annotation, String term)
    {
