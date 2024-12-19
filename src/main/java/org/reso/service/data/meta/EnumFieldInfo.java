@@ -13,6 +13,7 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.reso.service.servlet.RESOservlet.resourceLookup;
 import static org.reso.service.servlet.RESOservlet.getConnection;
