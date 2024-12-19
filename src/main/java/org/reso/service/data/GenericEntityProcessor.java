@@ -244,6 +244,9 @@ public class GenericEntityProcessor implements EntityProcessor
             Object value = mappedObj.remove(fieldName);
             if (field.isCollection() && !((List) value).isEmpty())
                 enumValues.put(fieldName, Arrays.asList(((List<Long>) value).stream().map(x -> enumField.getKeyByIndex((int)(long)x)).toArray()));
+            else if (field.isFlags()){
+                enumValues.put(fieldName,Arrays.asList(Arrays.stream(enumField.expandFlags((int)(long)(Long) value)).mapToObj(x -> enumField.getKeyByIndex((int)x)).toArray()));
+            }
             else if (!field.isCollection() && value != null)
                 enumValues.put(fieldName, enumField.getKeyByIndex((int)(long)(Long)value));
         }

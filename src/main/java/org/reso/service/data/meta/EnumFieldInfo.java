@@ -129,15 +129,22 @@ public class EnumFieldInfo extends FieldInfo
       return isFlags;
    }
 
-   public String getKeyByIndex(int index)
-   {
-      if (index<values.size())
-      {
-         return values.get(index).getKey(lookupName);
-      }
+    public String getKeyByIndex(int index) {
+        if (isFlags) {
+            index = Long.numberOfTrailingZeros(index);
+        }
+        return values.get(index).getKey(lookupName);
+    }
 
-      return null;
-   }
+    public long[] expandFlags(long flags) {
+        ArrayList<Long> indexes = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : valueLookup.entrySet()) {
+            if ((flags & entry.getValue()) == entry.getValue()) {
+                indexes.add((Long) entry.getValue());
+            }
+        }
+        return indexes.stream().mapToLong(i -> i).toArray();
+    }
 
    public Object getValueOf(String enumStringValue)
    {
