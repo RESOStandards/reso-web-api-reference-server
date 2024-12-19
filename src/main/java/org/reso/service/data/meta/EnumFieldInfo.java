@@ -19,9 +19,9 @@ import static org.reso.service.servlet.RESOservlet.getConnection;
 
 public class EnumFieldInfo extends FieldInfo
 {
-   private              String                   lookupName;
-   private final        ArrayList<EnumValueInfo> values = new ArrayList<>();
-   private final        HashMap<String,Object> valueLookup = new HashMap<>();
+    private String lookupName;
+    private final ArrayList<EnumValueInfo> values = new ArrayList<>();
+    private final HashMap<String, Long> valueLookup = new HashMap<>();
 
    private static final Logger                   LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
    private boolean isCollection = false;
