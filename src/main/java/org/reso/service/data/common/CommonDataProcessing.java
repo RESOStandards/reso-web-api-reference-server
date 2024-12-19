@@ -246,7 +246,7 @@ public class CommonDataProcessing
       }
 
       Object val = field.getValueOf(lookup.get("LookupValue").toString() );
-      if (field.isCollection())
+      if (field.isCollection() || field.isFlags())
       {
          Object possibleList = entity.get(fieldName);
          ArrayList<Object> valList;

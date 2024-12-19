@@ -20,6 +20,7 @@ public class FieldObject extends GenericGSONobject<AnnotationObject>
                      new AbstractMap.SimpleEntry<>("scale", Integer.class),
                      new AbstractMap.SimpleEntry<>("precision", Integer.class),
                      new AbstractMap.SimpleEntry<>("isCollection", Boolean.class),
+                     new AbstractMap.SimpleEntry<>("isFlags", Boolean.class),
                      new AbstractMap.SimpleEntry<>("unicode", Boolean.class) )
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

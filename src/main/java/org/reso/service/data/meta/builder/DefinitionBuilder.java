@@ -162,7 +162,7 @@ public class DefinitionBuilder
             String fieldName = (String) field.getProperty("fieldName");
             String fieldType = (String) field.getProperty("type");
             Boolean nullable = (Boolean) field.getProperty("nullable");
-            // Boolean isCollection = (Boolean) field.getProperty("isCollection");
+            boolean isFlags = (Boolean.TRUE.equals(field.getProperty("isFlags")));
             boolean isCollection = (Boolean.TRUE.equals(field.getProperty("isCollection")));
 
             Integer maxLength = (Integer) field.getProperty("maxLength");
@@ -183,6 +183,10 @@ public class DefinitionBuilder
                   if (isCollection==true)
                   {
                      enumFieldInfo.setCollection();
+                  }
+                  if(isFlags==true)
+                  {
+                     enumFieldInfo.setFlags();
                   }
                   newField = enumFieldInfo;
 
