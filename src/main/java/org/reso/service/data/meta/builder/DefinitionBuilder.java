@@ -180,10 +180,6 @@ public class DefinitionBuilder
                   String lookupName = fieldType.substring(EDM_ENUM.length()+1 );
                   EnumFieldInfo enumFieldInfo = new EnumFieldInfo(fieldName, EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
                   enumFieldInfo.setLookupName(lookupName);
-                  if (isCollection==true)
-                  {
-                     enumFieldInfo.setCollection();
-                  }
                   if(isFlags==true)
                   {
                      enumFieldInfo.setFlags();
@@ -269,6 +265,9 @@ public class DefinitionBuilder
                   {
                      newField.addAnnotation((String) annotation.getProperty("value"), (String) annotation.getProperty("term"));
                   }
+               }
+               if (isCollection == true) {
+                  newField.setCollection();
                }
                fieldList.add(newField);
             }
