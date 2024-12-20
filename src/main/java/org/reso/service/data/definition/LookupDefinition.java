@@ -95,7 +95,7 @@ public class LookupDefinition extends ResourceInfo
             reverseKey =new HashMap<>();
                     reverseLookupCache.put(lookup.get("LookupName").toString(),reverseKey);
          }
-         reverseKey.put(lookup.get("LookupValue").toString(),lookup.get("LookupKey").toString());
+         reverseKey.put(lookup.get("LegacyOdataValue").toString(),lookup.get("LookupKey").toString());
          lookupCache.put(lookup.get(pKey).toString(),lookup);
       }
    }

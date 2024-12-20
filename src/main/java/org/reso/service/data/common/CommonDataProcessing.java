@@ -257,7 +257,7 @@ public class CommonDataProcessing
          return;
       }
 
-      Object val = field.getValueOf(lookup.get("LookupValue").toString() );
+      Object val = field.getValueOf(lookup.get("LegacyOdataValue").toString() );
       if (field.isCollection() || field.isFlags())
       {
          Object possibleList = entity.get(fieldName);

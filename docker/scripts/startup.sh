@@ -18,6 +18,7 @@ if [ -z "${SQL_HOST}" ]; then
   # Generate the DDL
   java -jar "${TEMP_DIR}/web-api-commander.jar" --generateReferenceDDL --useKeyNumeric >"${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
   sed -i '1,2d' "${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
+  sed -i '1360s/(LookupKey, LookupName, LookupValue, StandardLookupValue, LegacyOdataValue)/(LookupKey, LookupName, LookupValue, LegacyOdataValue, StandardLookupValue)/' "${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
 
 
 
