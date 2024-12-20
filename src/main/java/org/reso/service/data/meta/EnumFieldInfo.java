@@ -25,7 +25,6 @@ public class EnumFieldInfo extends FieldInfo
     private final HashMap<String, Long> valueLookup = new HashMap<>();
 
    private static final Logger                   LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
-   private boolean isCollection = false;
    private boolean isFlags = false;
 
    private static final String LOOKUP_COLUMN_NAME = "LookupValue";
@@ -108,16 +107,6 @@ public class EnumFieldInfo extends FieldInfo
    public String getLookupName()
    {
       return lookupName;
-   }
-
-   public boolean isCollection()
-   {
-      return isCollection;
-   }
-
-   public void setCollection()
-   {
-      isCollection = true;
    }
 
    public void setFlags()
