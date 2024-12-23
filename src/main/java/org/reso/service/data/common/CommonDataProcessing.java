@@ -333,7 +333,7 @@ public class CommonDataProcessing
             // Single value, bit flag representation
             if (field.isFlags())
             {
-               entity.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, totalFlagValues));
+               entity.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, totalFlagValues == 0 ? null: totalFlagValues));
             }
             // Single value Primitive
             else
