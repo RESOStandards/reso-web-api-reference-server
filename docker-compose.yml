@@ -5,6 +5,7 @@ services:
     ports:
       - "8080:8080" # Only expose the application port for production
     environment:
+      - LOOKUP_TYPE
       - MONGO_SYNC_CONNECTION_STR
       - SQL_CONNECTION_STR
       - SQL_HOST

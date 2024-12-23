@@ -12,7 +12,6 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.reso.service.servlet.RESOservlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -36,6 +35,7 @@ public class DefinitionBuilder
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
    private static final Logger     LOG     = LoggerFactory.getLogger(DefinitionBuilder.class);
+   private static final String LOOKUP_TYPE = System.getenv().get("LOOKUP_TYPE");
 
    // Internals
    private final String     fileName;
@@ -327,6 +327,39 @@ public class DefinitionBuilder
          e.printStackTrace();
       }
 
+      if(LOOKUP_TYPE !=null)
+          fields.stream().filter(DefinitionBuilder::isEnum).forEach(DefinitionBuilder::morphEnums);
+
       return createResources(fields, lookups);
+   }
+
+   private static boolean isEnum(GenericGSONobject x)
+   {
+      boolean isExpansion = Boolean.TRUE.equals(x.getProperty("isExpansion"));
+      boolean isComplexType = Boolean.TRUE.equals(x.getProperty("isComplexType"));
+      boolean edm = x.getProperty("type").toString().startsWith("Edm");
+      return !edm && !isExpansion && !isComplexType;
+   }
+
+   private static void morphEnums(GenericGSONobject field)
+   {
+      switch (LOOKUP_TYPE){
+         case "ENUM_FLAGS":
+            if(Boolean.TRUE.equals(field.properties.get("isCollection")))
+            {
+               field.properties.put("isFlags", true);
+               field.properties.remove("isCollection");
+            }
+            break;
+         case "STRING":
+            field.properties.put("type", "Edm.String");
+         case "ENUM_COLLECTION":
+            if(Boolean.TRUE.equals(field.properties.get("isFlags")))
+            {
+               field.properties.put("isCollection", true);
+               field.properties.remove("isFlags");
+            }
+            break;
+      }
    }
 }
