@@ -18,7 +18,18 @@ if [ -z "${SQL_HOST}" ]; then
   # Generate the DDL
   java -jar "${TEMP_DIR}/web-api-commander.jar" --generateReferenceDDL --useKeyNumeric >"${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
   sed -i '1,2d' "${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
-  sed -i '1360s/(LookupKey, LookupName, LookupValue, StandardLookupValue, LegacyOdataValue)/(LookupKey, LookupName, LookupValue, LegacyOdataValue, StandardLookupValue)/' "${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
+  sed -i '1359s/(LookupKey, LookupName, LookupValue, StandardLookupValue, LegacyOdataValue)/(LookupKey, LookupName, LookupValue, LegacyOdataValue, StandardLookupValue)/' "${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
+  echo "CREATE TABLE IF NOT EXISTS lookup_value (
+      LookupValueKey TEXT,
+      LookupValueKeyNumeric BIGINT NOT NULL AUTO_INCREMENT,
+      ResourceName TEXT,
+      ResourceRecordKey TEXT,
+      ResourceRecordKeyNumeric BIGINT,
+      LookupKey TEXT,
+      ModificationTimestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      FieldName TEXT NOT NULL,
+      PRIMARY KEY (LookupValueKeyNumeric)
+  ) ENGINE=MyISAM DEFAULT CHARSET=utf8;" >> "${SQL_DIR}/reso-reference-ddl-dd-1.7.numeric-keys.sql"
 
 
 
