@@ -63,9 +63,6 @@ public class RESOservlet extends HttpServlet
 //      this.validator.addProvider(new BasicAuthProvider());  // We're using this for the token auth.  Only use here for easy browser testing.
       this.validator.addProvider(new BearerAuthProvider());
 
-      String dbHost = env.get("SQL_HOST");
-      String dbUser = env.get("SQL_USER");
-      String dbPwd = env.get("SQL_PASSWORD");
       String dbConnString = env.get("SQL_CONNECTION_STR");
       String dbDriverStr = env.get("SQL_DB_DRIVER");
 
@@ -88,8 +85,9 @@ public class RESOservlet extends HttpServlet
          LOG.debug("looking to connect to " + dbConnString);
 
          connect = DriverManager
-                  .getConnection(dbConnString,dbUser,dbPwd);
+                  .getConnection(dbConnString);
 
+            LOG.info("Connected to the database!", connect);
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in connecting to the database", e);

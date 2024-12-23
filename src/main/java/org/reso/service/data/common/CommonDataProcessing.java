@@ -82,19 +82,23 @@ public class CommonDataProcessing
       String fieldName = field.getFieldName();
       Object value = null;
       // In case of a String
-      if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
-      {
-         value = resultSet.getString(fieldName);
-      }
-      // In case of a DateTime entry
-      else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
-      {
-         value = resultSet.getTimestamp(fieldName);
-      }
-      // @TODO: More will have to be added here, ie: Integers, as data comes in, we can extend this easily here.
-      else
-      {
-         LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
+      try{
+         if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
+         {
+            value = resultSet.getString(fieldName);
+         }
+         // In case of a DateTime entry
+//      else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
+//      {
+//         value = resultSet.getTimestamp(fieldName);
+//      }
+         // @TODO: More will have to be added here, ie: Integers, as data comes in, we can extend this easily here.
+         else
+         {
+            LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
+         }
+      } catch (Exception e) {
+         LOG.info("Field Name: "+field.getFieldName()+" not in schema.");
       }
 
       return value;
