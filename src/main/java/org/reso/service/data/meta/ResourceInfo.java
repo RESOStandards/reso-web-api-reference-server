@@ -29,149 +29,123 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
-public class ResourceInfo
-{
-   protected String tableName;
-   protected String resourceName;
-   protected String resourcesName;
-   protected FullQualifiedName fqn;
-   protected String primaryKeyName;
+public class ResourceInfo {
+    protected String tableName;
+    protected String resourceName;
+    protected String resourcesName;
+    protected FullQualifiedName fqn;
+    protected String primaryKeyName;
 
-   protected static final Logger LOG = LoggerFactory.getLogger(ResourceInfo.class);
+    protected static final Logger LOG = LoggerFactory.getLogger(ResourceInfo.class);
 
-   /**
-    * Accessors
-    */
+    /**
+     * Accessors
+     */
 
-   public String getTableName()
-   {
-      return tableName;
-   }
+    public String getTableName() {
+        return tableName;
+    }
 
-   public String getResourcesName()
-   {
-      return resourcesName;
-   }
+    public String getResourcesName() {
+        return resourcesName;
+    }
 
-   public String getResourceName()
-   {
-      return resourceName;
-   }
+    public String getResourceName() {
+        return resourceName;
+    }
 
-   public String getPrimaryKeyName()
-   {
-      return primaryKeyName;
-   }
+    public String getPrimaryKeyName() {
+        return primaryKeyName;
+    }
 
-   public ArrayList<FieldInfo> getFieldList()
-   {
-      return null;
-   }
+    public ArrayList<FieldInfo> getFieldList() {
+        return null;
+    }
 
-   public Boolean useCustomDatasource() { return false; }
+    public Boolean useCustomDatasource() {
+        return false;
+    }
 
-   public FullQualifiedName getFqn(String namespace)
-   {
-      if (this.fqn==null)
-         this.fqn = new FullQualifiedName(namespace, getResourceName());
+    public FullQualifiedName getFqn(String namespace) {
+        if (this.fqn == null)
+            this.fqn = new FullQualifiedName(namespace, getResourceName());
 
-      return this.fqn;
-   }
+        return this.fqn;
+    }
 
-   public void findPrimaryKey(Connection connect) throws SQLException
-   {
-      String primaryKey = null;
-      DatabaseMetaData metadata = connect.getMetaData();
+    public void findPrimaryKey(Connection connect) throws SQLException {
+        String primaryKey = null;
+        DatabaseMetaData metadata = connect.getMetaData();
+        ResultSet pkColumns = metadata.getPrimaryKeys(null, null, getTableName());
 
-      // Check if this is MongoDB
-      if (metadata.getDatabaseProductName().toLowerCase().contains("mongodb")) {
-         MongoConnection mongoConnect = (MongoConnection) connect;
-         primaryKey = findMongoPrimaryKey(mongoConnect);
-      } else {
-
-         ResultSet pkColumns = metadata.getPrimaryKeys(null, null, getTableName());
-
-         while (pkColumns.next()) {
-            String pkColumnName = pkColumns.getString("COLUMN_NAME");
+        while (pkColumns.next()) {
             Integer pkPosition = pkColumns.getInt("KEY_SEQ");
+            String pkColumnName = pkColumns.getString("COLUMN_NAME");
             LOG.debug("" + pkColumnName + " is the " + pkPosition + ". column of the primary key of the table " + tableName);
             primaryKey = pkColumnName; //.toLowerCase();  // lowercase only needed for PostgreSQL
-         }
+        }
 
-
-         String[] splitKey = primaryKey.split("Numeric");
-         if (splitKey.length >= 1)
+        String[] splitKey = primaryKey.split("Numeric");
+        if (splitKey.length >= 1)
             primaryKey = splitKey[0];
 
-         ArrayList<FieldInfo> fields = this.getFieldList();
-         for (FieldInfo field : fields) {
+        ArrayList<FieldInfo> fields = this.getFieldList();
+        for (FieldInfo field : fields) {
             String fieldName = field.getFieldName();
             if (primaryKey.equals(fieldName))
-               primaryKey = field.getODATAFieldName();
-         }
+                primaryKey = field.getODATAFieldName();
+        }
 
-      }
-      this.primaryKeyName = primaryKey;
+        this.primaryKeyName = primaryKey;
+    }
 
-   }
+    public void findMongoPrimaryKey(MongoClient mongoClient) {
+        String primaryKey = null;
 
-private String findMongoPrimaryKey(MongoConnection connect) {
-   String primaryKey = null;
-
-   // MongoDB connection URI
-   Map<String, String> env = System.getenv();
-   String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
-
-   try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
-      // Access database and collection
-      MongoDatabase database = mongoClient.getDatabase("reso");
-      MongoCollection<Document> collection = database.getCollection(tableName);
+        // Access database and collection
+        MongoDatabase database = mongoClient.getDatabase("reso");
+        MongoCollection<Document> collection = database.getCollection(tableName);
 
 //      Uncomment to query Lookup endpoint
 //      MongoDatabase database = mongoClient.getDatabase("reso");
 //      MongoCollection<Document> collection = database.getCollection("Property");
-      ArrayList<Document> indexDocs = collection.listIndexes().into(new ArrayList<Document>());
+        ArrayList<Document> indexDocs = collection.listIndexes().into(new ArrayList<Document>());
 
-      // List indexes and iterate over them
-      for (Document indexDoc : indexDocs) {
-         LOG.info("Index Document: " + indexDoc.toJson());
+        // List indexes and iterate over them
+        for (Document indexDoc : indexDocs) {
+            LOG.info("Index Document: " + indexDoc.toJson());
 
-         // Check if the index is unique
-         Boolean isUnique = indexDoc.getBoolean("unique", false);
+            // Check if the index is unique
+            Boolean isUnique = indexDoc.getBoolean("unique", false);
 
-         // Get the indexed field(s)
-         Document keyDoc = (Document) indexDoc.get("key");
-         if (keyDoc != null && isUnique) {
-            for (String indexedField : keyDoc.keySet()) {
-               primaryKey = indexedField; // Get the first unique indexed field
-               LOG.info("Unique Index Found: Field = " + primaryKey);
-               break; // Exit loop after finding the first unique index
+            // Get the indexed field(s)
+            Document keyDoc = (Document) indexDoc.get("key");
+            if (keyDoc != null && isUnique) {
+                for (String indexedField : keyDoc.keySet()) {
+                    primaryKey = indexedField; // Get the first unique indexed field
+                    LOG.info("Unique Index Found: Field = " + primaryKey);
+                    break; // Exit loop after finding the first unique index
+                }
             }
-         }
 
-         if (primaryKey != null) {
-            break; // Exit outer loop once a unique index is found
-         }
-      }
+            if (primaryKey != null) {
+                break; // Exit outer loop once a unique index is found
+            }
+        }
 
-      if (primaryKey == null) {
-         LOG.warn("No unique index found for collection: "+tableName);
-      }
-   } catch (Exception e) {
-      LOG.error("Error fetching unique index with sync driver: " + e.getMessage(), e);
-   }
+        if (primaryKey == null) {
+            LOG.warn("No unique index found for collection: " + tableName);
+        }
 
-   return primaryKey;
-}
+        this.primaryKeyName = primaryKey;
+    }
 
 
-   public Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates)
-   {
-      return null;
-   }
+    public Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates) {
+        return null;
+    }
 
-   public EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException
-   {
-      return null;
-   }
+    public EntityCollection getData(EdmEntitySet edmEntitySet, UriInfo uriInfo, boolean isCount) throws ODataApplicationException {
+        return null;
+    }
 }
