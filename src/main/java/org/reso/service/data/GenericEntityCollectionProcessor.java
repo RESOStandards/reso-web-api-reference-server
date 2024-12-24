@@ -27,8 +27,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GenericEntityCollectionProcessor implements EntityCollectionProcessor
 {
@@ -38,6 +42,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    private final String     dbType;
    HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
+   private static final int PAGE_SIZE           = 100;
 
    /**
     * If you use this constructor, make sure to set your resourceInfo
@@ -96,9 +101,15 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          entitySet = getData(edmEntitySet, uriInfo, isCount, resource);
       }
 
+      TopOption topOption = uriInfo.getTopOption();
+      SkipOption skipOption = uriInfo.getSkipOption();
+      int topNumber = topOption == null ? PAGE_SIZE : topOption.getValue();
+      int skipNumber = skipOption == null ? 0 : skipOption.getValue();
+
       // 3rd: create a serializer based on the requested format (json)
       try
       {
+         entitySet.setNext(new URI(modifyUrl(request.getRawRequestUri(), topNumber, skipNumber+topNumber)));
          uriInfo.asUriInfoAll().getFormatOption().getFormat();  // If Format is given, then we will use what it has.
       }
       catch (Exception e)
@@ -218,8 +229,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
          // Logic for $top
          TopOption topOption = uriInfo.getTopOption();
-         if (topOption != null) {
-            int topNumber = topOption.getValue();
+         int topNumber = topOption == null ? PAGE_SIZE : topOption.getValue();
+         if (topNumber != 0) {
             if (topNumber >= 0)
             {
                // Logic for $skip
@@ -323,6 +334,32 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       }
 
       return entCollection;
+   }
+
+   private static String modifyUrl(String url, Integer topValue, Integer skipValue) {
+      url = modifyParameter(url, "\\$top=\\d+", "\\$top", topValue);
+      url = modifyParameter(url, "\\$skip=\\d+", "\\$skip", skipValue);
+      return url;
+   }
+
+   // Helper method to replace or append a parameter
+   private static String modifyParameter(String url, String pattern, String paramName, Integer value) {
+      Pattern p = Pattern.compile(pattern);
+      Matcher m = p.matcher(url);
+
+      if (value != null) {
+         String replacement = paramName + "=" + value;
+         // Check if the parameter already exists
+         if (m.find()) {
+            // Replace existing parameter
+            url = m.replaceFirst(replacement);
+         } else {
+            // Append parameter, handling both cases: with and without existing query
+            url += (url.contains("?") ? "&" : "?") + replacement.replace("\\","");
+         }
+      }
+
+      return url;
    }
 
 }
