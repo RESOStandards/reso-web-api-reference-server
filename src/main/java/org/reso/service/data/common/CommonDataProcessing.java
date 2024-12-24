@@ -93,10 +93,10 @@ public class CommonDataProcessing
             }
          }
          // In case of a DateTime entry
-//      else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
-//      {
-//         value = resultSet.getTimestamp(fieldName);
-//      }
+         else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
+         {
+            value = resultSet.getTimestamp(fieldName);
+         }
          // @TODO: More will have to be added here, ie: Integers, as data comes in, we can extend this easily here.
          else
          {

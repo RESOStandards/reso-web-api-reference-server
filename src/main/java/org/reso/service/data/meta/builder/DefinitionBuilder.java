@@ -25,7 +25,8 @@ public class DefinitionBuilder
    private static final Map<String, FullQualifiedName> EDM_MAP = Stream.of(
                      new AbstractMap.SimpleEntry<>("Edm.String", EdmPrimitiveTypeKind.String.getFullQualifiedName() ),
                      new AbstractMap.SimpleEntry<>("Edm.Boolean", EdmPrimitiveTypeKind.Boolean.getFullQualifiedName() ),
-                     new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ))
+                     new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ),
+                     new AbstractMap.SimpleEntry<>("Edm.DateTimeOffset", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName() ))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
    
    private static final Map<String, Boolean> HEADER_FIELDS = Stream.of(
