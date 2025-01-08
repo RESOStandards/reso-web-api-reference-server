@@ -176,7 +176,7 @@ public class GenericEntityProcessor implements EntityProcessor
               String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
                       null, selectOption);
 
-              queryString.replace("*", selectList); 
+              queryString = queryString.replace("*", selectList);
           }
 
          ResultSet resultSet = statement.executeQuery(queryString);
@@ -186,7 +186,7 @@ public class GenericEntityProcessor implements EntityProcessor
          // add the lookups from the database.
          while (resultSet.next())
          {
-            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,null);
+            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
             resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
 
             product = ent;
