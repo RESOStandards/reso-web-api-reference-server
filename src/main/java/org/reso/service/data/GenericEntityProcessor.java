@@ -5,7 +5,6 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
-import com.mongodb.jdbc.MongoConnection;
 import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
@@ -21,18 +20,19 @@ import org.apache.olingo.server.api.deserializer.ODataDeserializer;
 import org.apache.olingo.server.api.processor.EntityProcessor;
 import org.apache.olingo.server.api.serializer.EntitySerializerOptions;
 import org.apache.olingo.server.api.serializer.ODataSerializer;
+import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
 import org.apache.olingo.server.api.uri.UriInfo;
 import org.apache.olingo.server.api.uri.UriParameter;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.queryoption.SelectItem;
+import org.apache.olingo.server.api.uri.queryoption.SelectOption;
 import org.bson.Document;
 import org.reso.service.data.common.CommonDataProcessing;
 import org.reso.service.data.meta.EnumFieldInfo;
-import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
-import org.reso.service.data.meta.builder.FieldObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,7 +88,7 @@ public class GenericEntityProcessor implements EntityProcessor
       }
       else
       {
-         entity = getData(edmEntitySet, keyPredicates, resource);
+         entity = getData(edmEntitySet, keyPredicates, resource, uriInfo);
       }
 
       // 3. serialize
@@ -117,10 +117,10 @@ public class GenericEntityProcessor implements EntityProcessor
     */
    private HashMap<String,Object> getDataToHash(List<UriParameter> keyPredicates, ResourceInfo resource)
    {
-      return CommonDataProcessing.translateEntityToMap(this.getData(null, keyPredicates, resource));
+      return CommonDataProcessing.translateEntityToMap(this.getData(null, keyPredicates, resource, null));
    }
 
-   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource) {
+   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource, UriInfo uriInfo) {
       ArrayList<FieldInfo> fields = resource.getFieldList();
 
       Entity product = null;
@@ -161,10 +161,26 @@ public class GenericEntityProcessor implements EntityProcessor
             queryString = queryString + " WHERE " + sqlCriteria;
          }
 
-         LOG.info("SQL Query: "+queryString);
+          String primaryFieldName = resource.getPrimaryKeyName();
+          HashMap<String,Boolean> selectLookup = null;
+          SelectOption selectOption = uriInfo.getSelectOption();
+          if (selectOption!=null) {
+              selectLookup = new HashMap<>();
+              selectLookup.put(primaryFieldName, true);
+
+              for (SelectItem sel : selectOption.getSelectItems()) {
+                  String val = sel.getResourcePath().getUriResourceParts().get(0).toString();
+                  selectLookup.put(val, true);
+              }
+              EdmEntityType edmEntityType = edmEntitySet.getEntityType();
+              String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
+                      null, selectOption);
+
+              queryString.replace("*", selectList); 
+          }
+
          ResultSet resultSet = statement.executeQuery(queryString);
 
-         String primaryFieldName = resource.getPrimaryKeyName();
          ArrayList<String> resourceRecordKeys = new ArrayList<>();
 
          // add the lookups from the database.
