@@ -5,11 +5,9 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.jdbc.MongoConnection;
 import org.apache.olingo.commons.api.data.*;
-import org.apache.olingo.commons.api.edm.EdmEntitySet;
-import org.apache.olingo.commons.api.edm.EdmEntityType;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.apache.olingo.commons.api.edm.*;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -22,14 +20,14 @@ import org.apache.olingo.server.api.serializer.EntitySerializerOptions;
 import org.apache.olingo.server.api.serializer.ODataSerializer;
 import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
-import org.apache.olingo.server.api.uri.UriInfo;
-import org.apache.olingo.server.api.uri.UriParameter;
-import org.apache.olingo.server.api.uri.UriResource;
-import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.*;
+import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
+import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
 import org.apache.olingo.server.api.uri.queryoption.SelectItem;
 import org.apache.olingo.server.api.uri.queryoption.SelectOption;
 import org.bson.Document;
 import org.reso.service.data.common.CommonDataProcessing;
+import org.reso.service.data.definition.FieldDefinition;
 import org.reso.service.data.meta.EnumFieldInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
@@ -96,7 +94,7 @@ public class GenericEntityProcessor implements EntityProcessor
 
       ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
       // expand and select currently not supported
-      EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).select(uriInfo.getSelectOption()).build();
+      EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).select(uriInfo.getSelectOption()).expand(uriInfo.getExpandOption()).build();
 
       ODataSerializer serializer = odata.createSerializer(responseFormat);
       SerializerResult serializerResult = serializer.entity(serviceMetadata, entityType, entity, options);
@@ -212,6 +210,33 @@ public class GenericEntityProcessor implements EntityProcessor
             CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
 
          }
+          ExpandOption expandOption = uriInfo.getExpandOption();
+          ExpandItem expandItem = expandOption.getExpandItems().get(0);
+          UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+          EdmNavigationProperty edmNavigationProperty = null;
+          // we don't need to handle error cases, as it is done in the Olingo library
+          if (uriResource instanceof UriResourceNavigation) {
+              edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+              EdmEntityType expandEdmEntityType = edmNavigationProperty.getType();
+              ResourceInfo resourceInfo = resourceLookup.get(expandEdmEntityType.getName());
+              String resourceKey = product.getProperty(edmNavigationProperty.getName()+"Key").getValue().toString();
+              String navPropName = edmNavigationProperty.getName();
+
+              Statement expandStatement = connect.createStatement();
+              String expandQueryString = "select * from " + resourceInfo.getTableName() + " where " + resourceInfo.getPrimaryKeyName() + " = '" + resourceKey + "'";
+              ResultSet expandResultSet = expandStatement.executeQuery(expandQueryString);
+
+              Entity expandEntity = null;
+              while (expandResultSet.next()) {
+                  expandEntity = CommonDataProcessing.getEntityFromRow(expandResultSet, resourceInfo, null);
+              }
+              expandStatement.close();
+
+              Link link = new Link();
+              link.setTitle(navPropName);
+              link.setInlineEntity(expandEntity);
+              product.getNavigationLinks().add(link);
+          }
          statement.close();
 
       } catch (Exception e) {

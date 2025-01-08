@@ -20,7 +20,8 @@ public class DefinitionBuilder
 {
    // Constants
 
-   private static final String EDM_ENUM = "org.reso.metadata.enums";
+   private static final String NAMESPACE = "org.reso.metadata";
+   private static final String EDM_ENUM = NAMESPACE + ".enums";
 
    private static final Map<String, FullQualifiedName> EDM_MAP = Stream.of(
                      new AbstractMap.SimpleEntry<>("Edm.String", EdmPrimitiveTypeKind.String.getFullQualifiedName() ),
@@ -162,9 +163,11 @@ public class DefinitionBuilder
 
             String fieldName = (String) field.getProperty("fieldName");
             String fieldType = (String) field.getProperty("type");
+            String fieldTypeName = (String) field.getProperty("typeName");
             Boolean nullable = (Boolean) field.getProperty("nullable");
             boolean isFlags = (Boolean.TRUE.equals(field.getProperty("isFlags")));
             boolean isCollection = (Boolean.TRUE.equals(field.getProperty("isCollection")));
+            boolean isExpansion = (Boolean.TRUE.equals(field.getProperty("isExpansion")));
 
             Integer maxLength = (Integer) field.getProperty("maxLength");
             Integer scale = (Integer) field.getProperty("scale");
@@ -239,6 +242,9 @@ public class DefinitionBuilder
                   }
 
                }
+               else if(fieldType.startsWith(NAMESPACE)) {
+                  newField = new FieldInfo(fieldName, new FullQualifiedName(NAMESPACE, fieldTypeName));
+               }
 
             if (newField != null)
             {
@@ -269,6 +275,9 @@ public class DefinitionBuilder
                }
                if (isCollection == true) {
                   newField.setCollection();
+               }
+               if (isExpansion == true) {
+                  newField.setExpansion();
                }
                fieldList.add(newField);
             }
