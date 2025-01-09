@@ -89,12 +89,16 @@ public class GenericEntityProcessor implements EntityProcessor
          entity = getData(edmEntitySet, keyPredicates, resource, uriInfo);
       }
 
-      // 3. serialize
-      EdmEntityType entityType = edmEntitySet.getEntityType();
+        // 3. serialize
+        EdmEntityType entityType = edmEntitySet.getEntityType();
+        SelectOption selectOption = uriInfo.getSelectOption();
+        ExpandOption expandOption = uriInfo.getExpandOption();
+        String selectList = odata.createUriHelper().buildContextURLSelectList(entityType,
+                expandOption, selectOption);
 
-      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
-      // expand and select currently not supported
-      EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).select(uriInfo.getSelectOption()).expand(uriInfo.getExpandOption()).build();
+        ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).selectList(selectList).build();
+        // expand and select currently not supported
+        EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).select(selectOption).expand(expandOption).build();
 
       ODataSerializer serializer = odata.createSerializer(responseFormat);
       SerializerResult serializerResult = serializer.entity(serviceMetadata, entityType, entity, options);
