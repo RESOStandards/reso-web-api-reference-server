@@ -211,33 +211,44 @@ public class GenericEntityProcessor implements EntityProcessor
 
          }
           ExpandOption expandOption = uriInfo.getExpandOption();
-          ExpandItem expandItem = expandOption.getExpandItems().get(0);
-          UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
-          EdmNavigationProperty edmNavigationProperty = null;
-          // we don't need to handle error cases, as it is done in the Olingo library
-          if (uriResource instanceof UriResourceNavigation) {
-              edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
-              EdmEntityType expandEdmEntityType = edmNavigationProperty.getType();
-              ResourceInfo resourceInfo = resourceLookup.get(expandEdmEntityType.getName());
-              String resourceKey = product.getProperty(edmNavigationProperty.getName()+"Key").getValue().toString();
-              String navPropName = edmNavigationProperty.getName();
+          for(ExpandItem expandItem : expandOption.getExpandItems()) {
+              UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+              EdmNavigationProperty edmNavigationProperty = null;
+              // we don't need to handle error cases, as it is done in the Olingo library
+              if (uriResource instanceof UriResourceNavigation) {
+                  EntityCollection navigationTargetEntityCollection = new EntityCollection();
+                  edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+                  EdmEntityType expandEdmEntityType = edmNavigationProperty.getType();
+                  ResourceInfo resourceInfo = resourceLookup.get(expandEdmEntityType.getName());
+                  Property resourceKey = product.getProperty(edmNavigationProperty.getName() + "Key");
+                  String navPropName = edmNavigationProperty.getName();
+                  Boolean isCollection = edmNavigationProperty.isCollection();
 
-              Statement expandStatement = connect.createStatement();
-              String expandQueryString = "select * from " + resourceInfo.getTableName() + " where " + resourceInfo.getPrimaryKeyName() + " = '" + resourceKey + "'";
-              ResultSet expandResultSet = expandStatement.executeQuery(expandQueryString);
+                  Statement expandStatement = connect.createStatement();
+                  String expandQueryString = "select * from " + resourceInfo.getTableName() + " where KEYNAME = 'KEYVALUE'";
+                  if(isCollection)
+                      expandQueryString = expandQueryString.replace("KEYNAME", resource.getPrimaryKeyName()).replace("KEYVALUE", resourceRecordKeys.get(0));
+                  else
+                      expandQueryString = expandQueryString.replace("KEYNAME", resourceInfo.getPrimaryKeyName()).replace("KEYVALUE", resourceKey.getValue().toString());
+                  ResultSet expandResultSet = expandStatement.executeQuery(expandQueryString);
 
-              Entity expandEntity = null;
-              while (expandResultSet.next()) {
-                  expandEntity = CommonDataProcessing.getEntityFromRow(expandResultSet, resourceInfo, null);
+                  Entity expandEntity = null;
+                  while (expandResultSet.next()) {
+                      expandEntity = CommonDataProcessing.getEntityFromRow(expandResultSet, resourceInfo, null);
+                      navigationTargetEntityCollection.getEntities().add(expandEntity);
+                  }
+                  expandStatement.close();
+
+                  Link link = new Link();
+                  link.setTitle(navPropName);
+                  if(isCollection)
+                      link.setInlineEntitySet(navigationTargetEntityCollection);
+                  else
+                      link.setInlineEntity(expandEntity);
+                  product.getNavigationLinks().add(link);
               }
-              expandStatement.close();
-
-              Link link = new Link();
-              link.setTitle(navPropName);
-              link.setInlineEntity(expandEntity);
-              product.getNavigationLinks().add(link);
           }
-         statement.close();
+          statement.close();
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
