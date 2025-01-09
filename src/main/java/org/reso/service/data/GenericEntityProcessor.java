@@ -163,23 +163,8 @@ public class GenericEntityProcessor implements EntityProcessor
             queryString = queryString + " WHERE " + sqlCriteria;
          }
 
-            String primaryFieldName = resource.getPrimaryKeyName();
-            HashMap<String, Boolean> selectLookup = null;
-            SelectOption selectOption = uriInfo.getSelectOption();
-          if (selectOption!=null) {
-              selectLookup = new HashMap<>();
-              selectLookup.put(primaryFieldName, true);
-
-              for (SelectItem sel : selectOption.getSelectItems()) {
-                  String val = sel.getResourcePath().getUriResourceParts().get(0).toString();
-                  selectLookup.put(val, true);
-              }
-              EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-              String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
-                      null, selectOption);
-
-              queryString = queryString.replace("*", selectList);
-          }
+         String primaryFieldName = resource.getPrimaryKeyName();
+         HashMap<String, Boolean> selectLookup = null;
 
          ResultSet resultSet = statement.executeQuery(queryString);
 
@@ -213,26 +198,26 @@ public class GenericEntityProcessor implements EntityProcessor
             }
             CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
 
+         }
+         statement.close();
+         for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
+            UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+            if (uriResource instanceof UriResourceNavigation) {
+                EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+                String navPropName = edmNavigationProperty.getName();
+
+                EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(0));
+
+                Link link = new Link();
+                link.setTitle(navPropName);
+                if (edmNavigationProperty.isCollection())
+                    link.setInlineEntitySet(expandEntityCollection);
+                else
+                    link.setInlineEntity(expandEntityCollection.getEntities().get(0));
+
+                product.getNavigationLinks().add(link);
             }
-            for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
-                UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
-                if (uriResource instanceof UriResourceNavigation) {
-                    EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
-                    String navPropName = edmNavigationProperty.getName();
-
-                    EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(0));
-
-                    Link link = new Link();
-                    link.setTitle(navPropName);
-                    if (edmNavigationProperty.isCollection())
-                        link.setInlineEntitySet(expandEntityCollection);
-                    else
-                        link.setInlineEntity(expandEntityCollection.getEntities().get(0));
-
-                    product.getNavigationLinks().add(link);
-                }
-            }
-            statement.close();
+        }
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
