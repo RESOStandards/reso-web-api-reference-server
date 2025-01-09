@@ -1,22 +1,14 @@
 package org.reso.service.data.common;
 
 
-import org.apache.olingo.commons.api.data.Entity;
-import org.apache.olingo.commons.api.data.EntityCollection;
-import org.apache.olingo.commons.api.data.Property;
-import org.apache.olingo.commons.api.data.ValueType;
+import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.EdmProperty;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
-import org.apache.olingo.commons.api.http.HttpStatusCode;
-import org.apache.olingo.server.api.ODataApplicationException;
-import org.apache.olingo.server.api.uri.UriInfoResource;
 import org.apache.olingo.server.api.uri.UriResource;
-import org.apache.olingo.server.api.uri.UriResourcePrimitiveProperty;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.apache.olingo.server.api.uri.queryoption.*;
-import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
-import org.apache.olingo.server.api.uri.queryoption.expression.Member;
 import org.reso.service.data.definition.LookupDefinition;
 import org.reso.service.data.meta.*;
 import org.slf4j.Logger;
@@ -30,10 +22,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-public class CommonDataProcessing
-{
-   private static final Logger LOG = LoggerFactory.getLogger(CommonDataProcessing.class);
-   private static HashMap<String, List<FieldInfo>> resourceEnumFields = new HashMap<>();
+import static org.reso.service.servlet.RESOservlet.resourceLookup;
+
+public class CommonDataProcessing {
+    private static final Logger LOG = LoggerFactory.getLogger(CommonDataProcessing.class);
+    private static HashMap<String, List<FieldInfo>> resourceEnumFields = new HashMap<>();
 
 
    /**
@@ -412,17 +405,54 @@ public class CommonDataProcessing
    }
 
 
-   /**
-    * Creates an unique URI identifier for the entity / id
-    * @param entitySetName Name of the Entity set
-    * @param id unique ID of the object
-    * @return unique URI identifier for the entity / id
-    */
-   private static URI createId(String entitySetName, Object id) {
-      try {
-         return new URI(entitySetName + "('" + id + "')");
-      } catch (URISyntaxException e) {
-         throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
-      }
-   }
+    /**
+     * Creates an unique URI identifier for the entity / id
+     * @param entitySetName Name of the Entity set
+     * @param id            unique ID of the object
+     * @return unique URI identifier for the entity / id
+     */
+    private static URI createId(String entitySetName, Object id) {
+        try {
+            return new URI(entitySetName + "('" + id + "')");
+        } catch (URISyntaxException e) {
+            throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
+        }
+    }
+
+    public static EntityCollection getExpandEntityCollection(Connection connect, EdmNavigationProperty edmNavigationProperty, Entity sourceEntity, ResourceInfo sourceResource, String sourceKey) throws SQLException {
+        EntityCollection navigationTargetEntityCollection = new EntityCollection();
+        EdmEntityType expandEdmEntityType = edmNavigationProperty.getType();
+        Property expandResourceKey = sourceEntity.getProperty(edmNavigationProperty.getName() + "Key");
+        boolean isCollection = edmNavigationProperty.isCollection();
+        ResourceInfo expandResource = resourceLookup.get(expandEdmEntityType.getName());
+
+        Statement expandStatement = connect.createStatement();
+        String expandQueryString = "select * from " + expandResource.getTableName() + " where KEYNAME = 'KEYVALUE'";
+
+        if (isCollection) {
+            String keyName;
+            switch (expandResource.getResourceName()) {
+                case "Media":
+                case "Queue":
+                case "OtherPhone":
+                case "SocialMedia":
+                case "HistoryTransactional":
+                    keyName = "ResourceName = '" + sourceResource.getResourceName() +"' AND ResourceRecordKey";
+                    break;
+                default:
+                    keyName = sourceResource.getPrimaryKeyName();
+            }
+            expandQueryString = expandQueryString.replace("KEYNAME", keyName).replace("KEYVALUE", sourceKey);
+        } else
+            expandQueryString = expandQueryString.replace("KEYNAME", expandResource.getPrimaryKeyName()).replace("KEYVALUE", expandResourceKey.getValue().toString());
+        ResultSet expandResultSet = expandStatement.executeQuery(expandQueryString);
+
+        Entity expandEntity = null;
+        while (expandResultSet.next()) {
+            expandEntity = CommonDataProcessing.getEntityFromRow(expandResultSet, expandResource, null);
+            navigationTargetEntityCollection.getEntities().add(expandEntity);
+        }
+        expandStatement.close();
+        return navigationTargetEntityCollection;
+    }
 }
