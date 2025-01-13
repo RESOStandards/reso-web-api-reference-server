@@ -80,9 +80,13 @@ public class CommonDataProcessing {
          {
             value = resultSet.getString(fieldName);
             if(field.isCollection()){
-                String str = ((String)value).replaceAll("\\[", "").replaceAll("\\]", "");
-                String[] values = Arrays.stream(str.split(",")).map(String::trim).toArray(String[]::new);
-                value = Arrays.asList(values);
+                String str = ((String)value).replaceAll("\\[|\\]|\"", "");
+                if(str.isEmpty())
+                   value = new ArrayList<>();
+                else {
+                   String[] values = Arrays.stream(str.split(",")).map(String::trim).toArray(String[]::new);
+                   value = Arrays.asList(values);
+                }
             }
          }
          // In case of a DateTime entry

@@ -374,7 +374,7 @@ public class GenericEntityProcessor implements EntityProcessor
                 FullQualifiedName fieldType = field.getType();
                 if (value != null) {
                     if (fieldType.equals(EdmPrimitiveTypeKind.String.getFullQualifiedName())) {
-                        document.append(key, value.toString());
+                        document.append(key, value);
                     } else if (fieldType.equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName())) {
                         // Assuming the date is in ISO format or needs to be converted to a Date object
                         try {
