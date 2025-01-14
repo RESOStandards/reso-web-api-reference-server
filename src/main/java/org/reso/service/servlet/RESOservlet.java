@@ -234,7 +234,7 @@ public class RESOservlet extends HttpServlet {
         }
     }
 
-    private boolean isMongo(Connection connect) throws SQLException {
+    public static boolean isMongo(Connection connect) throws SQLException {
         DatabaseMetaData metadata = connect.getMetaData();
         return metadata.getDatabaseProductName().toLowerCase().contains("mongodb");
     }

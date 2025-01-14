@@ -372,4 +372,9 @@ public class DefinitionBuilder
             break;
       }
    }
+
+   public static String getLookupType()
+   {
+      return LOOKUP_TYPE;
+   }
 }
