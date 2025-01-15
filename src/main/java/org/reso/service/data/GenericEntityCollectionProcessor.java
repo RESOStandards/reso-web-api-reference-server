@@ -176,7 +176,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          String sqlCriteria = null;
          if (filter!=null)
          {
-            if (this.dbType.equals("mysql"))
+            if (true)
             {
                sqlCriteria = filter.getExpression().accept(new MySQLFilterExpressionVisitor(resource));
             }
