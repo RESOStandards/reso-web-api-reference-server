@@ -204,7 +204,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          else
          {
             SelectOption selectOption = uriInfo.getSelectOption();
-            if (selectOption!=null)
+            if (false)
             {
                selectLookup = new HashMap<>();
                selectLookup.put(primaryFieldName,true);
@@ -328,28 +328,32 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                if(enumValues != null)
                   CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
 
-               for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
-                  UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
-                  if (uriResource instanceof UriResourceNavigation) {
-                     EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
-                     String navPropName = edmNavigationProperty.getName();
 
-                     EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(0));
+            }
+         }
+         statement.close();
 
-                     Link link = new Link();
-                     link.setTitle(navPropName);
-                     if (edmNavigationProperty.isCollection())
-                        link.setInlineEntitySet(expandEntityCollection);
-                     else
-                        link.setInlineEntity(expandEntityCollection.getEntities().get(0));
+         int index = 0;
+         for (Entity product : productList) {
+            for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
+               UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+               if (uriResource instanceof UriResourceNavigation) {
+                  EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+                  String navPropName = edmNavigationProperty.getName();
 
-                     product.getNavigationLinks().add(link);
-                  }
+                  EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(index++));
+
+                  Link link = new Link();
+                  link.setTitle(navPropName);
+                  if (edmNavigationProperty.isCollection())
+                     link.setInlineEntitySet(expandEntityCollection);
+                  else
+                     link.setInlineEntity(expandEntityCollection.getEntities().get(0));
+
+                  product.getNavigationLinks().add(link);
                }
             }
          }
-
-         statement.close();
 
       } catch (Exception e) {
             LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
