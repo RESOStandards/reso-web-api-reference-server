@@ -4,6 +4,7 @@ package org.reso.service.data;
 import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.edm.EdmProperty;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -123,7 +124,11 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
       // 4th: Now serialize the content: transform from the EntitySet object to InputStream
       EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
+      SelectOption selectOption = uriInfo.getSelectOption();
+      ExpandOption expandOption = uriInfo.getExpandOption();
+      String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
+              expandOption, selectOption);
+      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).selectList(selectList).build();
 
       final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
       EntityCollectionSerializerOptions opts = null;
@@ -137,18 +142,17 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       }
       else
       {
-         SelectOption selectOption = uriInfo.getSelectOption();
          if (selectOption!=null)
          {
             opts = EntityCollectionSerializerOptions.with()
                      .contextURL(contextUrl)
-                     .select(selectOption)
+                     .select(selectOption).expand(expandOption)
                      .id(id)
                      .build();
          }
          else
          {
-            opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).build();
+            opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).expand(expandOption).build();
          }
       }
       SerializerResult serializerResult = serializer.entityCollection(serviceMetadata, edmEntityType, entitySet, opts);
@@ -323,6 +327,25 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                HashMap<String, Object> enumValues = entities.get(key);
                if(enumValues != null)
                   CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+
+               for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
+                  UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+                  if (uriResource instanceof UriResourceNavigation) {
+                     EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+                     String navPropName = edmNavigationProperty.getName();
+
+                     EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(0));
+
+                     Link link = new Link();
+                     link.setTitle(navPropName);
+                     if (edmNavigationProperty.isCollection())
+                        link.setInlineEntitySet(expandEntityCollection);
+                     else
+                        link.setInlineEntity(expandEntityCollection.getEntities().get(0));
+
+                     product.getNavigationLinks().add(link);
+                  }
+               }
             }
          }
 
