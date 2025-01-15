@@ -1,6 +1,7 @@
 package org.reso.service.data;
 
 
+import com.google.gson.Gson;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoClients;
 import com.mongodb.client.MongoCollection;
@@ -182,7 +183,7 @@ public class GenericEntityProcessor implements EntityProcessor
          if (product!=null && resourceRecordKeys.size()>0 && enumFields.size()>0)
          {
             queryString = "select * from lookup_value";
-            queryString = queryString + " WHERE ResourceRecordKey in (\"" + String.join("','", resourceRecordKeys ) + "\")";
+            queryString = queryString + " WHERE ResourceRecordKey in ('" + String.join("','", resourceRecordKeys ) + "')";
 
             LOG.info("SQL Query: "+queryString);
             resultSet = statement.executeQuery(queryString);
@@ -313,6 +314,7 @@ public class GenericEntityProcessor implements EntityProcessor
 
          for (Map.Entry<String,Object> entrySet: mappedObj.entrySet())
          {
+            Gson gson =  new Gson();
             String key = entrySet.getKey();
             Object value = entrySet.getValue();
             columnNames.add(key);
@@ -325,7 +327,8 @@ public class GenericEntityProcessor implements EntityProcessor
             }
             else if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
             {
-               columnValues.add('"'+value.toString()+'"');
+               boolean isList = value instanceof ArrayList;
+               columnValues.add("'"+ (isList ? gson.toJson(value):value.toString()) +"'");
             }
             else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
             {
