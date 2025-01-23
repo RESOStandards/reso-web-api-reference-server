@@ -14,6 +14,7 @@ import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.rmi.runtime.Log;
 
 
 public class DefinitionBuilder
@@ -26,8 +27,12 @@ public class DefinitionBuilder
    private static final Map<String, FullQualifiedName> EDM_MAP = Stream.of(
                      new AbstractMap.SimpleEntry<>("Edm.String", EdmPrimitiveTypeKind.String.getFullQualifiedName() ),
                      new AbstractMap.SimpleEntry<>("Edm.Boolean", EdmPrimitiveTypeKind.Boolean.getFullQualifiedName() ),
-                     new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ),
-                     new AbstractMap.SimpleEntry<>("Edm.DateTimeOffset", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName() ))
+                     new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Decimal.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Double", EdmPrimitiveTypeKind.Double.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Int32", EdmPrimitiveTypeKind.Int32.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Int64", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Date", EdmPrimitiveTypeKind.Date.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.DateTimeOffset", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName() ))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
    
    private static final Map<String, Boolean> HEADER_FIELDS = Stream.of(
@@ -278,6 +283,10 @@ public class DefinitionBuilder
                }
                if (isExpansion == true) {
                   newField.setExpansion();
+               }
+               // In cases where we have EnumType metadata being used in a String LookupType server, we must add LookupName annotations
+               if(LOOKUP_TYPE.equals("STRING") && fieldType.equals("Edm.String") && fieldTypeName != null && !fieldTypeName.isEmpty()){
+                  newField.addAnnotation(fieldTypeName, "RESO.OData.Metadata.LookupName");
                }
                fieldList.add(newField);
             }

@@ -124,16 +124,18 @@ public class RESOservlet extends HttpServlet {
                     mongoClient = MongoClients.create(syncConnStr);
                 }
                 for (ResourceInfo resource : loadedResources) {
-                    try {
-                        if(mongoClient != null)
-                            resource.findMongoPrimaryKey(mongoClient);
-                        else
-                            resource.findPrimaryKey(connect);
-                        resources.add(resource);
-                        resourceLookup.put(resource.getResourceName(), resource);
-                    } catch (SQLException e) {
-                        LOG.error("Error with: " + resource.getResourceName() + " - " + e.getMessage());
-                    }
+                    // TODO: We manually define the "Field"/"Lookup" resources above, should we move that logic within the following
+                    if(!(resource.getResourceName()).equals("Field") && !(resource.getResourceName()).equals("Lookup"))
+                        try {
+                            if(mongoClient != null)
+                                resource.findMongoPrimaryKey(mongoClient);
+                            else
+                                resource.findPrimaryKey(connect);
+                            resources.add(resource);
+                            resourceLookup.put(resource.getResourceName(), resource);
+                        } catch (SQLException e) {
+                            LOG.error("Error with: " + resource.getResourceName() + " - " + e.getMessage());
+                        }
                 }
             } catch (SQLException e) {
                 throw new RuntimeException(e);

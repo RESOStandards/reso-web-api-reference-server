@@ -23,6 +23,8 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
    public static final String CONTAINER_NAME = "Container";
    public static final FullQualifiedName CONTAINER = new FullQualifiedName(NAMESPACE, CONTAINER_NAME);
 
+   private static final String LOOKUP_TYPE = System.getenv().get("LOOKUP_TYPE");
+
    private static final Logger LOG = LoggerFactory.getLogger(RESOedmProvider.class);
 
    private static HashMap<String, ArrayList<FieldInfo>> navigationProperties = new HashMap<>();
@@ -351,7 +353,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       List<CsdlSchema> schemas = new ArrayList<>();
       schemas.add(schema);
 
-      schemas.add(enumSchema);
+      if(!LOOKUP_TYPE.equals("STRING")) schemas.add(enumSchema);
 
       return schemas;
    }

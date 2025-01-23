@@ -231,37 +231,6 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             queryString = queryString + " WHERE " + sqlCriteria;
          }
 
-         // Logic for $top
-         TopOption topOption = uriInfo.getTopOption();
-         int topNumber = topOption == null ? PAGE_SIZE : topOption.getValue();
-         if (topNumber != 0) {
-            if (topNumber >= 0)
-            {
-               // Logic for $skip
-               SkipOption skipOption = uriInfo.getSkipOption();
-               if (skipOption != null)
-               {
-                  int skipNumber = skipOption.getValue();
-                  if (skipNumber >= 0)
-                  {
-                     queryString = queryString + " LIMIT "+skipNumber+", "+topNumber;
-                  }
-                  else
-                  {
-                     throw new ODataApplicationException("Invalid value for $skip", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
-                  }
-               }
-               else
-               {
-                  queryString = queryString + " LIMIT " + topNumber;
-               }
-            }
-            else
-            {
-               throw new ODataApplicationException("Invalid value for $top", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
-            }
-         }
-
          OrderByOption orderByOption = uriInfo.getOrderByOption();
          if (orderByOption != null)
          {
@@ -284,6 +253,39 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                }
             }
          }
+
+         // Logic for $top
+         TopOption topOption = uriInfo.getTopOption();
+         int topNumber = topOption == null ? PAGE_SIZE : topOption.getValue();
+         if (topNumber != 0) {
+            if (topNumber > 0)
+            {
+               // Logic for $skip
+               SkipOption skipOption = uriInfo.getSkipOption();
+               if (skipOption != null)
+               {
+                  int skipNumber = skipOption.getValue();
+                  if (skipNumber >= 0)
+                  {
+//                     TODO: the order for skip number and top number may be flipped with atlas SQL
+                     queryString = queryString + " LIMIT "+skipNumber+", "+topNumber;
+                  }
+                  else
+                  {
+                     throw new ODataApplicationException("Invalid value for $skip", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+                  }
+               }
+               else
+               {
+                  queryString = queryString + " LIMIT " + topNumber;
+               }
+            }
+            else
+            {
+               throw new ODataApplicationException("Invalid value for $top", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+            }
+         }
+
          LOG.info("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 

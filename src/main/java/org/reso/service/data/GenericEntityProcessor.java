@@ -300,7 +300,9 @@ public class GenericEntityProcessor implements EntityProcessor
       String queryString = "insert into " + resource.getTableName();
       try
       {
-         Statement statement = connect.createStatement();
+          SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // For SQL DATE
+
+          Statement statement = connect.createStatement();
          ArrayList<String> columnNames = new ArrayList<>();
          ArrayList<String> columnValues = new ArrayList<>();
 
@@ -332,7 +334,16 @@ public class GenericEntityProcessor implements EntityProcessor
             }
             else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
             {
-               columnValues.add('"'+value.toString()+'"');
+                columnValues.add("'" + value.toString() + "'");
+            }
+            else if (field.getType().equals(EdmPrimitiveTypeKind.Date.getFullQualifiedName()))
+            {
+                if (value instanceof GregorianCalendar) {
+                    String formattedDate = dateFormat.format(((GregorianCalendar) value).getTime());
+                    columnValues.add("'" + formattedDate + "'");
+                } else {
+                    columnValues.add("'" + value.toString() + "'");
+                }
             }
             else
             {
