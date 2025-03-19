@@ -23,7 +23,11 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
    public static final String CONTAINER_NAME = "Container";
    public static final FullQualifiedName CONTAINER = new FullQualifiedName(NAMESPACE, CONTAINER_NAME);
 
+   private static final String LOOKUP_TYPE = System.getenv().get("LOOKUP_TYPE");
+
    private static final Logger LOG = LoggerFactory.getLogger(RESOedmProvider.class);
+
+   private static HashMap<String, ArrayList<FieldInfo>> navigationProperties = new HashMap<>();
 
    @Override
    public CsdlEntityType getEntityType(FullQualifiedName entityTypeName)
@@ -116,6 +120,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          String primaryFieldName = defn.getPrimaryKeyName();
 
          ArrayList<CsdlProperty> propertyList = new ArrayList<>();
+         ArrayList<CsdlNavigationProperty> navPropList = new ArrayList<CsdlNavigationProperty>();
 
          // create CsdlPropertyRef for Key element
          CsdlPropertyRef propertyRef = new CsdlPropertyRef();
@@ -124,6 +129,19 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
          for (FieldInfo field : fields) if (!field.isComplex())
          {
+            if(field.isExpansion()){
+               navigationProperties.putIfAbsent(defn.getResourceName(), new ArrayList<>());
+               navigationProperties.get(defn.getResourceName()).add(field);
+               CsdlNavigationProperty navProp = new CsdlNavigationProperty()
+                       .setName(field.getFieldName())
+                       .setType(field.getType().toString())
+                       .setNullable(!field.isCollection())
+                       .setCollection(field.isCollection());
+//                       .setPartner(defn.getResourceName());
+               navPropList.add(navProp);
+               continue;
+            }
+
             String fieldName = field.getODATAFieldName();
 
             CsdlProperty property = new CsdlProperty().setName(fieldName).setType(field.getType()).setCollection(field.isCollection());
@@ -164,6 +182,10 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          entityType.setProperties(propertyList);
          entityType.setKey(Collections.singletonList(propertyRef));
 
+         if(navPropList.size() > 0){
+            entityType.setNavigationProperties(navPropList);
+         }
+
          return entityType;
 
       } catch (Exception e)
@@ -185,9 +207,17 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          {
             if (entitySetName.equals(defn.getResourcesName()))
             {
+               ArrayList<FieldInfo> navigations = navigationProperties.get(defn.getResourceName());
                CsdlEntitySet entitySet = new CsdlEntitySet();
                entitySet.setName(defn.getResourcesName());
                entitySet.setType( defn.getFqn(NAMESPACE) );
+
+               if (navigations != null) for (FieldInfo field : navigations) {
+                  CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+                  navPropBinding.setPath(field.getFieldName());
+                  navPropBinding.setTarget(field.getType().getName());
+                  entitySet.getNavigationPropertyBindings().add(navPropBinding);
+               }
 
                return entitySet;
             }
@@ -203,9 +233,17 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
 
       if(entityContainer.equals(CONTAINER))
       {
+         ArrayList<FieldInfo> navigations = navigationProperties.get(defn.getResourceName());
          CsdlEntitySet entitySet = new CsdlEntitySet();
          entitySet.setName(defn.getResourcesName());
          entitySet.setType( defn.getFqn(NAMESPACE) );
+
+         if (navigations != null) for (FieldInfo field : navigations) {
+            CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+            navPropBinding.setPath(field.getFieldName());
+            navPropBinding.setTarget(field.getType().getName());
+            entitySet.getNavigationPropertyBindings().add(navPropBinding);
+         }
 
          return entitySet;
       }
@@ -315,7 +353,7 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
       List<CsdlSchema> schemas = new ArrayList<>();
       schemas.add(schema);
 
-      schemas.add(enumSchema);
+      if(!LOOKUP_TYPE.equals("STRING")) schemas.add(enumSchema);
 
       return schemas;
    }

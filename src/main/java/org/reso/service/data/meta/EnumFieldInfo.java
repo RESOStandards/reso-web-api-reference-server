@@ -13,18 +13,18 @@ import java.sql.ResultSet;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Map;
 
 import static org.reso.service.servlet.RESOservlet.resourceLookup;
 import static org.reso.service.servlet.RESOservlet.getConnection;
 
 public class EnumFieldInfo extends FieldInfo
 {
-   private              String                   lookupName;
-   private final        ArrayList<EnumValueInfo> values = new ArrayList<>();
-   private final        HashMap<String,Object> valueLookup = new HashMap<>();
+    private String lookupName;
+    private final ArrayList<EnumValueInfo> values = new ArrayList<>();
+    private final HashMap<String, Long> valueLookup = new HashMap<>();
 
    private static final Logger                   LOG    = LoggerFactory.getLogger(EnumFieldInfo.class);
-   private boolean isCollection = false;
    private boolean isFlags = false;
 
    private static final String LOOKUP_COLUMN_NAME = "LookupValue";
@@ -109,16 +109,6 @@ public class EnumFieldInfo extends FieldInfo
       return lookupName;
    }
 
-   public boolean isCollection()
-   {
-      return isCollection;
-   }
-
-   public void setCollection()
-   {
-      isCollection = true;
-   }
-
    public void setFlags()
    {
       isFlags = true;
@@ -129,6 +119,22 @@ public class EnumFieldInfo extends FieldInfo
       return isFlags;
    }
 
+    public String getKeyByIndex(int index) {
+        if (isFlags) {
+            index = Long.numberOfTrailingZeros(index);
+        }
+        return values.get(index).getKey(lookupName);
+    }
+
+    public long[] expandFlags(long flags) {
+        ArrayList<Long> indexes = new ArrayList<>();
+        for (Map.Entry<String, Long> entry : valueLookup.entrySet()) {
+            if ((flags & entry.getValue()) == entry.getValue()) {
+                indexes.add((Long) entry.getValue());
+            }
+        }
+        return indexes.stream().mapToLong(i -> i).toArray();
+    }
 
    public Object getValueOf(String enumStringValue)
    {
@@ -136,16 +142,18 @@ public class EnumFieldInfo extends FieldInfo
       if (value==null)
       {
          long bitValue = 1;
+         long gitValue = 0;
          for (EnumValueInfo val: values)
          {
-            valueLookup.put(val.getValue(),bitValue);
             if (isFlags)
             {
+               valueLookup.put(val.getValue(),bitValue);
                bitValue = bitValue * 2;
             }
             else
             {
-               bitValue = bitValue+1;
+               valueLookup.put(val.getValue(),gitValue);
+               gitValue = gitValue+1;
             }
          }
          value = valueLookup.get(enumStringValue);

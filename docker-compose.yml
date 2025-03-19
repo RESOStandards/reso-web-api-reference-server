@@ -1,22 +1,38 @@
-version: '3'
 services:
   odata-manager-app:
     restart: on-failure
     build: ./
-    expose:
-      - "8080"
-      - "8000"
     ports:
-      - 8080:8080
-      - 8000:8000
+      - "8080:8080" # Only expose the application port for production
     environment:
+      - LOOKUP_TYPE
+      - MONGO_SYNC_CONNECTION_STR
+      - SQL_CONNECTION_STR
       - SQL_HOST
       - SQL_USER
       - SQL_PASSWORD
-      - SQL_CONNECTION_STR
       - SQL_DB_DRIVER
       - CERT_REPORT_FILENAME
+      - ENABLE_DEBUG=false # Ensure debugging is off for production
     volumes:
-      - ./target:/usr/local/tomcat/webapps
-#    depends_on:
-#      - docker-mysql
+      - ./build/libs:/usr/local/tomcat/webapps
+    depends_on:
+      - docker-mariadb
+
+  docker-mariadb:
+    restart: always
+    container_name: docker-mariadb
+    image: mariadb:latest
+    environment:
+      MYSQL_DATABASE: reso_data_dictionary_1_7
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_ROOT_HOST: "%"
+    volumes:
+      - ./sql:/docker-entrypoint-initdb.d
+    ports:
+      - "6033:3306"
+    healthcheck:
+      test: '/usr/bin/mysql --user=root --password=root --execute "SHOW DATABASES;"'
+      interval: 2s
+      timeout: 20s
+      retries: 10

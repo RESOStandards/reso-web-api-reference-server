@@ -1,0 +1,9 @@
+services:
+  odata-manager-app:
+    environment:
+      - ENABLE_DEBUG=true # Enable debugging for development
+    expose:
+      - "8000"
+    ports:
+      - "8000:8000" # Map debugging port for development
+      - "8080:8080" # Keep the application port open for local use

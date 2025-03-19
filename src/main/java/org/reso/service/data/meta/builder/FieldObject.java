@@ -15,11 +15,14 @@ public class FieldObject extends GenericGSONobject<AnnotationObject>
                      new AbstractMap.SimpleEntry<>("resourceName", String.class),
                      new AbstractMap.SimpleEntry<>("fieldName", String.class),
                      new AbstractMap.SimpleEntry<>("type", String.class),
+                     new AbstractMap.SimpleEntry<>("typeName", String.class),
                      new AbstractMap.SimpleEntry<>("nullable", Boolean.class),
                      new AbstractMap.SimpleEntry<>("maxLength", Integer.class),
                      new AbstractMap.SimpleEntry<>("scale", Integer.class),
                      new AbstractMap.SimpleEntry<>("precision", Integer.class),
                      new AbstractMap.SimpleEntry<>("isCollection", Boolean.class),
+                     new AbstractMap.SimpleEntry<>("isExpansion", Boolean.class),
+                     new AbstractMap.SimpleEntry<>("isFlags", Boolean.class),
                      new AbstractMap.SimpleEntry<>("unicode", Boolean.class) )
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 

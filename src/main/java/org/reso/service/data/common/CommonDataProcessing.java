@@ -1,22 +1,14 @@
 package org.reso.service.data.common;
 
 
-import org.apache.olingo.commons.api.data.Entity;
-import org.apache.olingo.commons.api.data.EntityCollection;
-import org.apache.olingo.commons.api.data.Property;
-import org.apache.olingo.commons.api.data.ValueType;
+import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.EdmProperty;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
-import org.apache.olingo.commons.api.http.HttpStatusCode;
-import org.apache.olingo.server.api.ODataApplicationException;
-import org.apache.olingo.server.api.uri.UriInfoResource;
 import org.apache.olingo.server.api.uri.UriResource;
-import org.apache.olingo.server.api.uri.UriResourcePrimitiveProperty;
+import org.apache.olingo.server.api.uri.UriResourceNavigation;
 import org.apache.olingo.server.api.uri.queryoption.*;
-import org.apache.olingo.server.api.uri.queryoption.expression.Expression;
-import org.apache.olingo.server.api.uri.queryoption.expression.Member;
 import org.reso.service.data.definition.LookupDefinition;
 import org.reso.service.data.meta.*;
 import org.slf4j.Logger;
@@ -30,10 +22,11 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.*;
 
-public class CommonDataProcessing
-{
-   private static final Logger LOG = LoggerFactory.getLogger(CommonDataProcessing.class);
-   private static HashMap<String, List<FieldInfo>> resourceEnumFields = new HashMap<>();
+import static org.reso.service.servlet.RESOservlet.resourceLookup;
+
+public class CommonDataProcessing {
+    private static final Logger LOG = LoggerFactory.getLogger(CommonDataProcessing.class);
+    private static HashMap<String, List<FieldInfo>> resourceEnumFields = new HashMap<>();
 
 
    /**
@@ -82,19 +75,32 @@ public class CommonDataProcessing
       String fieldName = field.getFieldName();
       Object value = null;
       // In case of a String
-      if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
-      {
-         value = resultSet.getString(fieldName);
-      }
-      // In case of a DateTime entry
-      else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
-      {
-         value = resultSet.getTimestamp(fieldName);
-      }
-      // @TODO: More will have to be added here, ie: Integers, as data comes in, we can extend this easily here.
-      else
-      {
-         LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
+      try{
+         if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
+         {
+            value = resultSet.getString(fieldName);
+            if(field.isCollection()){
+                String str = ((String)value).replaceAll("\\[|\\]|\"", "");
+                if(str.isEmpty())
+                   value = new ArrayList<>();
+                else {
+                   String[] values = Arrays.stream(str.split(",")).map(String::trim).toArray(String[]::new);
+                   value = Arrays.asList(values);
+                }
+            }
+         }
+         // In case of a DateTime entry
+         else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
+         {
+            value = resultSet.getTimestamp(fieldName);
+         }
+         // @TODO: More will have to be added here, ie: Integers, as data comes in, we can extend this easily here.
+         else
+         {
+            LOG.info("Field Name: "+field.getFieldName()+" Field type: "+field.getType());
+         }
+      } catch (Exception e) {
+         LOG.info("Field Name: "+field.getFieldName()+" not in schema.");
       }
 
       return value;
@@ -141,7 +147,14 @@ public class CommonDataProcessing
             // This is Enums that are bit masks, stored on the resource.
             else if (field.isCollection())
             {
-               ent.addProperty(new Property(null, fieldName, ValueType.ENUM, value));
+               if(field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
+               {
+                  ent.addProperty(new Property(null, fieldName, ValueType.COLLECTION_PRIMITIVE, value));
+               }
+               else
+               {
+                  ent.addProperty(new Property(null, fieldName, ValueType.ENUM, value));
+               }
             }
             // Simply put in primitive values as entity properties.
             else
@@ -242,7 +255,7 @@ public class CommonDataProcessing
       }
 
       Object val = field.getValueOf(lookup.get("LegacyOdataValue").toString() );
-      if (field.isCollection())
+      if (field.isCollection() || field.isFlags())
       {
          Object possibleList = entity.get(fieldName);
          ArrayList<Object> valList;
@@ -317,7 +330,7 @@ public class CommonDataProcessing
             // Single value, bit flag representation
             if (field.isFlags())
             {
-               entity.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, totalFlagValues));
+               entity.addProperty(new Property(null, fieldName, ValueType.PRIMITIVE, totalFlagValues == 0 ? null: totalFlagValues));
             }
             // Single value Primitive
             else
@@ -396,17 +409,54 @@ public class CommonDataProcessing
    }
 
 
-   /**
-    * Creates an unique URI identifier for the entity / id
-    * @param entitySetName Name of the Entity set
-    * @param id unique ID of the object
-    * @return unique URI identifier for the entity / id
-    */
-   private static URI createId(String entitySetName, Object id) {
-      try {
-         return new URI(entitySetName + "('" + id + "')");
-      } catch (URISyntaxException e) {
-         throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
-      }
-   }
+    /**
+     * Creates an unique URI identifier for the entity / id
+     * @param entitySetName Name of the Entity set
+     * @param id            unique ID of the object
+     * @return unique URI identifier for the entity / id
+     */
+    private static URI createId(String entitySetName, Object id) {
+        try {
+            return new URI(entitySetName + "('" + id + "')");
+        } catch (URISyntaxException e) {
+            throw new ODataRuntimeException("Unable to create id for entity: " + entitySetName, e);
+        }
+    }
+
+    public static EntityCollection getExpandEntityCollection(Connection connect, EdmNavigationProperty edmNavigationProperty, Entity sourceEntity, ResourceInfo sourceResource, String sourceKey) throws SQLException {
+        EntityCollection navigationTargetEntityCollection = new EntityCollection();
+        EdmEntityType expandEdmEntityType = edmNavigationProperty.getType();
+        Property expandResourceKey = sourceEntity.getProperty(edmNavigationProperty.getName() + "Key");
+        boolean isCollection = edmNavigationProperty.isCollection();
+        ResourceInfo expandResource = resourceLookup.get(expandEdmEntityType.getName());
+
+        Statement expandStatement = connect.createStatement();
+        String expandQueryString = "select * from " + expandResource.getTableName() + " where KEYNAME = 'KEYVALUE'";
+
+        if (isCollection) {
+            String keyName;
+            switch (expandResource.getResourceName()) {
+                case "Media":
+                case "Queue":
+                case "OtherPhone":
+                case "SocialMedia":
+                case "HistoryTransactional":
+                    keyName = "ResourceName = '" + sourceResource.getResourceName() +"' AND ResourceRecordKey";
+                    break;
+                default:
+                    keyName = sourceResource.getPrimaryKeyName();
+            }
+            expandQueryString = expandQueryString.replace("KEYNAME", keyName).replace("KEYVALUE", sourceKey);
+        } else
+            expandQueryString = expandQueryString.replace("KEYNAME", expandResource.getPrimaryKeyName()).replace("KEYVALUE", expandResourceKey.getValue().toString());
+        ResultSet expandResultSet = expandStatement.executeQuery(expandQueryString);
+
+        Entity expandEntity = null;
+        while (expandResultSet.next()) {
+            expandEntity = CommonDataProcessing.getEntityFromRow(expandResultSet, expandResource, null);
+            navigationTargetEntityCollection.getEntities().add(expandEntity);
+        }
+        expandStatement.close();
+        return navigationTargetEntityCollection;
+    }
 }
