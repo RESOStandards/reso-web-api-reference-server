@@ -12,21 +12,27 @@ import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.reso.service.servlet.RESOservlet;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import sun.rmi.runtime.Log;
 
 
 public class DefinitionBuilder
 {
    // Constants
 
-   private static final String EDM_ENUM = "org.reso.metadata.enums";
+   private static final String NAMESPACE = "org.reso.metadata";
+   private static final String EDM_ENUM = NAMESPACE + ".enums";
 
    private static final Map<String, FullQualifiedName> EDM_MAP = Stream.of(
                      new AbstractMap.SimpleEntry<>("Edm.String", EdmPrimitiveTypeKind.String.getFullQualifiedName() ),
                      new AbstractMap.SimpleEntry<>("Edm.Boolean", EdmPrimitiveTypeKind.Boolean.getFullQualifiedName() ),
-                     new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ))
+                     new AbstractMap.SimpleEntry<>("Edm.Decimal", EdmPrimitiveTypeKind.Decimal.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Double", EdmPrimitiveTypeKind.Double.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Int32", EdmPrimitiveTypeKind.Int32.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Int64", EdmPrimitiveTypeKind.Int64.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.Date", EdmPrimitiveTypeKind.Date.getFullQualifiedName() ),
+                   new AbstractMap.SimpleEntry<>("Edm.DateTimeOffset", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName() ))
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
    
    private static final Map<String, Boolean> HEADER_FIELDS = Stream.of(
@@ -36,6 +42,7 @@ public class DefinitionBuilder
             .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 
    private static final Logger     LOG     = LoggerFactory.getLogger(DefinitionBuilder.class);
+   private static final String LOOKUP_TYPE = System.getenv().get("LOOKUP_TYPE");
 
    // Internals
    private final String     fileName;
@@ -161,8 +168,12 @@ public class DefinitionBuilder
 
             String fieldName = (String) field.getProperty("fieldName");
             String fieldType = (String) field.getProperty("type");
+            String fieldTypeName = (String) field.getProperty("typeName");
             Boolean nullable = (Boolean) field.getProperty("nullable");
-            Boolean isCollection = (Boolean) field.getProperty("isCollection");
+            boolean isFlags = (Boolean.TRUE.equals(field.getProperty("isFlags")));
+            boolean isCollection = (Boolean.TRUE.equals(field.getProperty("isCollection")));
+            boolean isExpansion = (Boolean.TRUE.equals(field.getProperty("isExpansion")));
+
             Integer maxLength = (Integer) field.getProperty("maxLength");
             Integer scale = (Integer) field.getProperty("scale");
             Integer precision = (Integer) field.getProperty("precision");
@@ -178,9 +189,9 @@ public class DefinitionBuilder
                   String lookupName = fieldType.substring(EDM_ENUM.length()+1 );
                   EnumFieldInfo enumFieldInfo = new EnumFieldInfo(fieldName, EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
                   enumFieldInfo.setLookupName(lookupName);
-                  if (isCollection==true)
+                  if(isFlags==true)
                   {
-                     enumFieldInfo.setCollection();
+                     enumFieldInfo.setFlags();
                   }
                   newField = enumFieldInfo;
 
@@ -236,6 +247,9 @@ public class DefinitionBuilder
                   }
 
                }
+               else if(fieldType.startsWith(NAMESPACE)) {
+                  newField = new FieldInfo(fieldName, new FullQualifiedName(NAMESPACE, fieldTypeName));
+               }
 
             if (newField != null)
             {
@@ -263,6 +277,16 @@ public class DefinitionBuilder
                   {
                      newField.addAnnotation((String) annotation.getProperty("value"), (String) annotation.getProperty("term"));
                   }
+               }
+               if (isCollection == true) {
+                  newField.setCollection();
+               }
+               if (isExpansion == true) {
+                  newField.setExpansion();
+               }
+               // In cases where we have EnumType metadata being used in a String LookupType server, we must add LookupName annotations
+               if(LOOKUP_TYPE.equals("STRING") && fieldType.equals("Edm.String") && fieldTypeName != null && !fieldTypeName.isEmpty()){
+                  newField.addAnnotation(fieldTypeName, "RESO.OData.Metadata.LookupName");
                }
                fieldList.add(newField);
             }
@@ -322,6 +346,44 @@ public class DefinitionBuilder
          e.printStackTrace();
       }
 
+      if(LOOKUP_TYPE !=null)
+          fields.stream().filter(DefinitionBuilder::isEnum).forEach(DefinitionBuilder::morphEnums);
+
       return createResources(fields, lookups);
+   }
+
+   private static boolean isEnum(GenericGSONobject x)
+   {
+      boolean isExpansion = Boolean.TRUE.equals(x.getProperty("isExpansion"));
+      boolean isComplexType = Boolean.TRUE.equals(x.getProperty("isComplexType"));
+      boolean edm = x.getProperty("type").toString().startsWith("Edm");
+      return !edm && !isExpansion && !isComplexType;
+   }
+
+   private static void morphEnums(GenericGSONobject field)
+   {
+      switch (LOOKUP_TYPE){
+         case "ENUM_FLAGS":
+            if(Boolean.TRUE.equals(field.properties.get("isCollection")))
+            {
+               field.properties.put("isFlags", true);
+               field.properties.remove("isCollection");
+            }
+            break;
+         case "STRING":
+            field.properties.put("type", "Edm.String");
+         case "ENUM_COLLECTION":
+            if(Boolean.TRUE.equals(field.properties.get("isFlags")))
+            {
+               field.properties.put("isCollection", true);
+               field.properties.remove("isFlags");
+            }
+            break;
+      }
+   }
+
+   public static String getLookupType()
+   {
+      return LOOKUP_TYPE;
    }
 }

@@ -1,23 +1,28 @@
 #!/bin/bash
 
-REAL_VAR0=`readlink -f $0`
-HOME_DIR=`dirname ${REAL_VAR0}`
-TEMP_DIR="${HOME_DIR}/temp"
-SQL_DIR="${HOME_DIR}/sql"
+# Define project names
+BUILDER_PROJECT=builder-stack
+APP_PROJECT=app-stack
 
-if [ ! -f "${HOME_DIR}/.env" ]
-then
-  cp "${HOME_DIR}/env-default" "${HOME_DIR}/.env"
+# Check if the user requested a builder rebuild
+if [ "$1" == "--rebuild-builder" ]; then
+    echo "Forcing rebuild of the builder container with --no-cache."
+    docker-compose -f docker-compose.builder.yml --project-name $BUILDER_PROJECT build --no-cache builder
+else
+    # Check if the builder container exists
+    if [ "$(docker-compose -f docker-compose.builder.yml --project-name $BUILDER_PROJECT ps -q builder)" ]; then
+        echo "Builder container exists. Skipping rebuild."
+    else
+        echo "Builder container does not exist. Building it now."
+        docker-compose -f docker-compose.builder.yml --project-name $BUILDER_PROJECT build builder
+    fi
 fi
 
-#Needed for Linux builds
-chmod a+x ./docker/scripts/*
+# Ensure the builder container is running
+docker-compose -f docker-compose.builder.yml --project-name $BUILDER_PROJECT up -d builder
 
-docker build -t reso-builder -f docker/docker-builder .
-docker run --name builder --mount type=bind,source="${HOME_DIR}",target=/usr/src/app -t reso-builder
+# Run startup script inside the builder container
+docker-compose -f docker-compose.builder.yml --project-name $BUILDER_PROJECT exec builder sh /usr/src/app/docker/scripts/startup.sh
 
-if ! docker-compose build
-then
-  echo "docker-compose could not be found.  You may need to install with pip."
-  exit
-fi
+# Build the odata-manager-app service
+docker-compose --project-name $APP_PROJECT build odata-manager-app --no-cache

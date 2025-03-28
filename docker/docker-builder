@@ -1,11 +1,18 @@
-FROM ubuntu:20.10
+FROM ubuntu:20.04
 
 WORKDIR /usr/src/app
+
 # Comment next line out for Windows builds
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y wget openjdk-8-jdk curl pip maven docker-compose
+
+# Install builder dependencies
+RUN apt-get update && apt-get install -y wget openjdk-8-jdk curl pip gradle docker-compose
 
 # Needed for Windows builds
 #RUN update-java-alternatives -s java-1.8.0-openjdk-amd64
 
-CMD sh /usr/src/app/docker/scripts/build.sh
+# Get necessary resources on startup
+# CMD sh /usr/src/app/docker/scripts/startup.sh
+
+# Uncomment if Builder container will not run
+CMD ["tail", "-f", "/dev/null"]
