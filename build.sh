@@ -1,8 +1,8 @@
 #!/bin/bash
 
 # Define project names
-BUILDER_PROJECT="builder-stack"
-APP_PROJECT="app-stack"
+BUILDER_PROJECT=builder-stack
+APP_PROJECT=app-stack
 
 # Check if the user requested a builder rebuild
 if [ "$1" == "--rebuild-builder" ]; then

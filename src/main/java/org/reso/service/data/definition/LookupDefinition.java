@@ -19,12 +19,20 @@ public class LookupDefinition extends ResourceInfo
    private static ArrayList<FieldInfo> fieldList = null;
    private static HashMap<String, HashMap<String,Object>> lookupCache = new HashMap<>();
    private static HashMap<String, HashMap<String,String>> reverseLookupCache = new HashMap<>();
+   private static final String METADATA_DISPLAYNAME = "RESO.OData.Metadata.DisplayName";
+   private static final String LOOKUP = "lookup";
+   private static final String LOOKUP_KEY = "LookupKey";
+   private static final String LOOKUP_NAME = "LookupName";
+   private static final String LOOKUP_VALUE = "LookupValue";
+   private static final String STANDARD_LOOKUP_VALUE = "StandardLookupValue";    
+   private static final String LEGACY_ODATA_VALUE = "LegacyOdataValue";
+   private static final String MODIFICATION_TIMESTAMP = "ModificationTimestamp";
 
    public LookupDefinition()
    {
-      this.tableName = "lookup";
-      this.resourcesName = "Lookup";
-      this.resourceName = "Lookup";
+      this.tableName = LOOKUP;
+      this.resourcesName = LOOKUP;
+      this.resourceName = LOOKUP;
    }
 
    public ArrayList<FieldInfo> getFieldList()
@@ -43,42 +51,24 @@ public class LookupDefinition extends ResourceInfo
       LookupDefinition.fieldList = list;
       FieldInfo fieldInfo = null;
 
-      fieldInfo = new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      fieldInfo.addAnnotation("Lookup Key Field", "RESO.OData.Metadata.DisplayName");
+      fieldInfo = new FieldInfo(LOOKUP_KEY, EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo.addAnnotation("Lookup Key Field", METADATA_DISPLAYNAME);
       list.add(fieldInfo);
 
-      fieldInfo = new FieldInfo("LookupName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo = new FieldInfo(LOOKUP_NAME, EdmPrimitiveTypeKind.String.getFullQualifiedName());
       list.add( fieldInfo);
 
-      fieldInfo = new FieldInfo("LookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo = new FieldInfo(LOOKUP_VALUE, EdmPrimitiveTypeKind.String.getFullQualifiedName());
       list.add(fieldInfo);
 
-      fieldInfo = new FieldInfo("StandardLookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo = new FieldInfo(STANDARD_LOOKUP_VALUE, EdmPrimitiveTypeKind.String.getFullQualifiedName());
       list.add(fieldInfo);
 
-      fieldInfo = new FieldInfo("LegacyOdataValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
+      fieldInfo = new FieldInfo(LEGACY_ODATA_VALUE, EdmPrimitiveTypeKind.String.getFullQualifiedName());
       list.add(fieldInfo);
 
-      fieldInfo = new FieldInfo("ModificationTimestamp", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
+      fieldInfo = new FieldInfo(MODIFICATION_TIMESTAMP, EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
       list.add(fieldInfo);
-
-      /**
-      //// Enum Test code
-      EnumFieldInfo enumFieldInfo = new EnumFieldInfo("EnumTest", EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
-
-      enumFieldInfo.setLookupName("EnumTest");
-      //enumFieldInfo.setCollection();
-      enumFieldInfo.setFlags();
-
-      EnumValueInfo enumValue = new EnumValueInfo("Awnings");
-      enumFieldInfo.addValue(enumValue);
-      enumValue = new EnumValueInfo("Boatslip");
-      enumFieldInfo.addValue(enumValue);
-      list.add(enumFieldInfo);
-
-      // END Test code
-      /**/
-
 
       return LookupDefinition.fieldList;
    }
@@ -89,13 +79,13 @@ public class LookupDefinition extends ResourceInfo
       String pKey = resource.getPrimaryKeyName();
       for (HashMap<String, Object> lookup: lookups)
       {
-         HashMap<String,String> reverseKey = reverseLookupCache.get(lookup.get("LookupName").toString());
+         HashMap<String,String> reverseKey = reverseLookupCache.get(lookup.get(LOOKUP_NAME).toString());
          if(reverseKey==null)
          {
             reverseKey =new HashMap<>();
-                    reverseLookupCache.put(lookup.get("LookupName").toString(),reverseKey);
+                    reverseLookupCache.put(lookup.get(LOOKUP_NAME).toString(),reverseKey);
          }
-         reverseKey.put(lookup.get("LegacyOdataValue").toString(),lookup.get("LookupKey").toString());
+         reverseKey.put(lookup.get(LEGACY_ODATA_VALUE).toString(),lookup.get(LOOKUP_KEY).toString());
          lookupCache.put(lookup.get(pKey).toString(),lookup);
       }
    }
