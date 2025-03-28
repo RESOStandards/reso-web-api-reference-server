@@ -212,11 +212,13 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
                entitySet.setName(defn.getResourcesName());
                entitySet.setType( defn.getFqn(NAMESPACE) );
 
-               if (navigations != null) for (FieldInfo field : navigations) {
-                  CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
-                  navPropBinding.setPath(field.getFieldName());
-                  navPropBinding.setTarget(field.getType().getName());
-                  entitySet.getNavigationPropertyBindings().add(navPropBinding);
+               if (navigations != null) {
+                  for (FieldInfo field : navigations) {
+                     CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+                     navPropBinding.setPath(field.getFieldName());
+                     navPropBinding.setTarget(field.getType().getName());
+                     entitySet.getNavigationPropertyBindings().add(navPropBinding);
+                  }
                }
 
                return entitySet;
@@ -238,11 +240,13 @@ public class RESOedmProvider extends CsdlAbstractEdmProvider
          entitySet.setName(defn.getResourcesName());
          entitySet.setType( defn.getFqn(NAMESPACE) );
 
-         if (navigations != null) for (FieldInfo field : navigations) {
-            CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
-            navPropBinding.setPath(field.getFieldName());
-            navPropBinding.setTarget(field.getType().getName());
-            entitySet.getNavigationPropertyBindings().add(navPropBinding);
+         if (navigations != null) {
+            for (FieldInfo field : navigations) {
+               CsdlNavigationPropertyBinding navPropBinding = new CsdlNavigationPropertyBinding();
+               navPropBinding.setPath(field.getFieldName());
+               navPropBinding.setTarget(field.getType().getName());
+               entitySet.getNavigationPropertyBindings().add(navPropBinding);
+            }
          }
 
          return entitySet;

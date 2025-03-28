@@ -180,14 +180,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          String sqlCriteria = null;
          if (filter!=null)
          {
-            if (true)
-            {
-               sqlCriteria = filter.getExpression().accept(new MySQLFilterExpressionVisitor(resource));
-            }
-            else if (this.dbType.equals("postgres"))
-            {
-               sqlCriteria = filter.getExpression().accept(new PostgreSQLFilterExpressionVisitor(resource));
-            }
+            sqlCriteria = filter.getExpression().accept(new MySQLFilterExpressionVisitor(resource));
          }
          HashMap<String,Boolean> selectLookup = null;
 
@@ -204,27 +197,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          else
          {
             SelectOption selectOption = uriInfo.getSelectOption();
-            if (false)
-            {
-               selectLookup = new HashMap<>();
-               selectLookup.put(primaryFieldName,true);
-
-               for (SelectItem sel:selectOption.getSelectItems())
-               {
-                  String val = sel.getResourcePath().getUriResourceParts().get(0).toString();
-                  selectLookup.put(val,true);
-               }
-               EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-               String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
-                                                                                     null, selectOption);
-
-               LOG.debug("Select list:"+selectList);
-               queryString = "select "+selectList+" from " + resource.getTableName();
-            }
-            else
-            {
-               queryString = "select * from " + resource.getTableName();
-            }
+            queryString = "select * from " + resource.getTableName();
          }
          if (null!=sqlCriteria && sqlCriteria.length()>0)
          {

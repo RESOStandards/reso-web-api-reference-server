@@ -42,11 +42,7 @@ if [ -z "${SQL_HOST}" ]; then
 fi
 
 
-# Run Maven to build the project
-#if mvn install; then
 if ./gradlew war; then
-#  mv ./target/RESOservice-1.0.war ./target/core.war
-#  cp RESODataDictionary-1.7.metadata-report.json ./target/
   if [ -f "./build/libs/RESOservice-1.0.war" ]; then
       mv ./build/libs/RESOservice-1.0.war ./build/libs/core.war
       echo "Moved RESOservice-1.0.war to core.war"

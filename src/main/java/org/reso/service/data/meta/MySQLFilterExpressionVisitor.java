@@ -164,24 +164,7 @@ public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String> {
                 return x.replaceAll("COLUMN_NAME", primitiveProperty.getProperty().getName()).replaceAll("TABLE_NAME", entityAlias).replaceAll("PRIMARY_KEY_NAME", resourceInfo.getPrimaryKeyName());
             }
         }
-//        while (iterator.hasNext()) {
-//            UriResource segment = (UriResource) iterator.next();
-//            if (segment instanceof UriResourceLambdaAll) {
-//                UriResourceLambdaAll all = (UriResourceLambdaAll) segment;
-//                segments.add(this.visitLambdaExpression("ALL", all.getLambdaVariable(), all.getExpression()));
-//            } else if (segment instanceof UriResourceLambdaAny) {
-//                UriResourceLambdaAny any = (UriResourceLambdaAny) segment;
-//                segments.add(this.visitLambdaExpression("ANY", any.getLambdaVariable(), any.getExpression()));
-//            } else if (segment instanceof UriResourcePartTyped) {
-//                if (segment instanceof UriResourcePrimitiveProperty) {
-//                    UriResourcePrimitiveProperty primitiveProperty = (UriResourcePrimitiveProperty) segment;
-//                    segments.add(entityAlias + "." + primitiveProperty.getProperty().getName());
-//                } else {
-////               throw new ODataApplicationException("Only primitive properties are implemented in filter expressions",
-////                                                   HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ENGLISH);
-//                }
-//            }
-//        }
+
         return segments.stream().reduce((a, b) -> a + " " + b).orElse("");
     }
 
