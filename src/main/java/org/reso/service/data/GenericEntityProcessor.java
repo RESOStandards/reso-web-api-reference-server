@@ -80,15 +80,14 @@ public class GenericEntityProcessor implements EntityProcessor
 
       // 2. retrieve the data from backend
       List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
-      Entity entity;
-      if (resource.useCustomDatasource() )
-      {
-         entity = resource.getData(edmEntitySet, keyPredicates);
-      }
-      else
-      {
-         entity = getData(edmEntitySet, keyPredicates, resource, uriInfo);
-      }
+      Entity entity = Optional.ofNullable(resource.useCustomDatasource()
+            ? resource.getData(edmEntitySet, keyPredicates)
+            : getData(edmEntitySet, keyPredicates, resource, uriInfo))
+        .orElseThrow(() -> new ODataApplicationException(
+            "Entity not found",
+            HttpStatusCode.NOT_FOUND.getStatusCode(),
+            Locale.ENGLISH
+        ));
 
         // 3. serialize
         EdmEntityType entityType = edmEntitySet.getEntityType();
@@ -126,7 +125,7 @@ public class GenericEntityProcessor implements EntityProcessor
    protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource, UriInfo uriInfo) {
       ArrayList<FieldInfo> fields = resource.getFieldList();
 
-      Entity product = null;
+      Entity entity = null;
 
       List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
 
@@ -177,10 +176,10 @@ public class GenericEntityProcessor implements EntityProcessor
             Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
             resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
 
-            product = ent;
+            entity = ent;
          }
 
-         if (product!=null && resourceRecordKeys.size()>0 && enumFields.size()>0)
+         if (entity!=null && resourceRecordKeys.size()>0 && enumFields.size()>0)
          {
             queryString = "select * from lookup_value";
             queryString = queryString + " WHERE ResourceRecordKey in ('" + String.join("','", resourceRecordKeys ) + "')";
@@ -197,7 +196,7 @@ public class GenericEntityProcessor implements EntityProcessor
             {
                CommonDataProcessing.getEntityValues(resultSet, entities, enumFields);
             }
-            CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+            CommonDataProcessing.setEntityEnums(enumValues,entity,enumFields);
 
          }
          statement.close();
@@ -207,7 +206,7 @@ public class GenericEntityProcessor implements EntityProcessor
                 EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
                 String navPropName = edmNavigationProperty.getName();
 
-                EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(0));
+                EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, entity, resource, resourceRecordKeys.get(0));
 
                 Link link = new Link();
                 link.setTitle(navPropName);
@@ -216,16 +215,16 @@ public class GenericEntityProcessor implements EntityProcessor
                 else
                     link.setInlineEntity(expandEntityCollection.getEntities().get(0));
 
-                product.getNavigationLinks().add(link);
+                entity.getNavigationLinks().add(link);
             }
         }
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
-         return product;
+         return entity;
       }
 
-      return product;
+      return entity;
    }
 
    private URI createId(String entitySetName, Object id) {

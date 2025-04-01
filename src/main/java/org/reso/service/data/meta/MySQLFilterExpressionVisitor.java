@@ -98,29 +98,34 @@ public class MySQLFilterExpressionVisitor implements ExpressionVisitor<String> {
                                           HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
    }
 
-   @Override
-   public String visitMethodCall(MethodKind methodCall, List<String> parameters)
-            throws ExpressionVisitException, ODataApplicationException {
+    @Override
+    public String visitMethodCall(MethodKind methodCall, List<String> parameters)
+        throws ExpressionVisitException, ODataApplicationException {
+    
         if (parameters.isEmpty() && methodCall.equals(MethodKind.NOW)) {
             return "CURRENT_DATE";
         }
-        String firsEntityParam = parameters.get(0);
+
+        String firstEntityParam = parameters.get(0);
+        String secondEntityParam = parameters.size() > 1 ? extractFromStringValue(parameters.get(1)) : null;
+
         switch (methodCall) {
             case CONTAINS:
-                return firsEntityParam + " LIKE '%" + extractFromStringValue(parameters.get(1)) + "%'";
+                return String.format("%s LIKE '%%%s%%'", firstEntityParam, secondEntityParam);
             case STARTSWITH:
-                return firsEntityParam + " LIKE '" + extractFromStringValue(parameters.get(1)) + "%'";
+                return String.format("%s LIKE '%s%%'", firstEntityParam, secondEntityParam);
             case ENDSWITH:
-                return firsEntityParam + " LIKE '%" + extractFromStringValue(parameters.get(1)) + "'";
+                return String.format("%s LIKE '%%%s'", firstEntityParam, secondEntityParam);
             case DAY:
-                return "DAY(" + firsEntityParam + ")";
+                return String.format("DAY(%s)", firstEntityParam);
             case MONTH:
-                return "MONTH(" + firsEntityParam + ")";
+                return String.format("MONTH(%s)", firstEntityParam);
             case YEAR:
-                return "YEAR(" + firsEntityParam + ")";
+                return String.format("YEAR(%s)", firstEntityParam);
+            default:
+                throw new ODataApplicationException("Method call " + methodCall + " not implemented",
+                    HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ENGLISH);
         }
-        throw new ODataApplicationException("Method call " + methodCall + " not implemented",
-                HttpStatusCode.NOT_IMPLEMENTED.getStatusCode(), Locale.ENGLISH);
     }
 
    @Override

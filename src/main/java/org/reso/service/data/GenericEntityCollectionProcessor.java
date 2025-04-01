@@ -43,6 +43,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    private final String     dbType;
    HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
+   // @TODO For DD 2.0+ this default page size should be 1000.
    private static final int PAGE_SIZE           = 100;
 
    /**
@@ -169,7 +170,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
       EntityCollection entCollection = new EntityCollection();
 
-      List<Entity> productList = entCollection.getEntities();
+      List<Entity> entityList = entCollection.getEntities();
 
       Map<String, String> properties = System.getenv();
 
@@ -205,7 +206,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          }
 
          OrderByOption orderByOption = uriInfo.getOrderByOption();
-         if (orderByOption != null)
+         if (orderByOption != null && orderByOption.getOrders() != null && !orderByOption.getOrders().isEmpty())
          {
             List<OrderByItem> orderItemList = orderByOption.getOrders();
             final OrderByItem orderByItem = orderItemList.get(0); // we support only one
@@ -277,11 +278,11 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          {
             Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
             resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
-            productList.add(ent);
+            entityList.add(ent);
          }
          List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
 
-         if (productList.size()>0 && resourceRecordKeys.size()>0 && enumFields.size()>0)
+         if (entityList.size()>0 && resourceRecordKeys.size()>0 && enumFields.size()>0)
          {
             queryString = "SELECT * FROM lookup_value";
             queryString += " WHERE ResourceRecordKey IN ('" + String.join("', '", resourceRecordKeys) + "')";
@@ -295,13 +296,13 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             {
                CommonDataProcessing.getEntityValues(resultSet, entities, enumFields);
             }
-            for (Entity product :productList)
+            for (Entity entity :entityList)
             {
                // The getValue should already be a String, so the toString should just pass it through, while making the following assignment simple.
-               String key = product.getProperty(primaryFieldName).getValue().toString();
+               String key = entity.getProperty(primaryFieldName).getValue().toString();
                HashMap<String, Object> enumValues = entities.get(key);
                if(enumValues != null)
-                  CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+                  CommonDataProcessing.setEntityEnums(enumValues,entity,enumFields);
 
 
             }
@@ -309,14 +310,14 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          statement.close();
 
          int index = 0;
-         for (Entity product : productList) {
+         for (Entity entity : entityList) {
             for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
                UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
                if (uriResource instanceof UriResourceNavigation) {
                   EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
                   String navPropName = edmNavigationProperty.getName();
 
-                  EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, product, resource, resourceRecordKeys.get(index++));
+                  EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, entity, resource, resourceRecordKeys.get(index++));
 
                   Link link = new Link();
                   link.setTitle(navPropName);
@@ -325,7 +326,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                   else
                      link.setInlineEntity(expandEntityCollection.getEntities().get(0));
 
-                  product.getNavigationLinks().add(link);
+                  entity.getNavigationLinks().add(link);
                }
             }
          }

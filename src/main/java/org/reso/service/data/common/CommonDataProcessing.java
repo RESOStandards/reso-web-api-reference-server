@@ -374,7 +374,7 @@ public class CommonDataProcessing {
    {
       ArrayList<FieldInfo> fields = resource.getFieldList();
 
-      ArrayList<HashMap<String,Object>> productList = new ArrayList<>();
+      ArrayList<HashMap<String,Object>> entityList = new ArrayList<>();
 
       try {
          String primaryFieldName = resource.getPrimaryKeyName();
@@ -395,17 +395,17 @@ public class CommonDataProcessing {
          while (resultSet.next())
          {
             HashMap<String, Object> ent = CommonDataProcessing.getObjectFromRow(resultSet, resource, null);
-            productList.add(ent);
+            entityList.add(ent);
          }
 
          statement.close();
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
-         return productList;
+         return entityList;
       }
 
-      return productList;
+      return entityList;
    }
 
 

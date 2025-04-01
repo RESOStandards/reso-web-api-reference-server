@@ -136,24 +136,28 @@ public class EnumFieldInfo extends FieldInfo
         return indexes.stream().mapToLong(i -> i).toArray();
     }
 
+   /**
+   * Gets the numeric enum value associated with a given enum string value. For flags enums, each value is assigned a bit value, others are sequential numbers
+   * @param enumStringValue the string representation of the enum value
+   * @return the numeric representation 
+   */
    public Object getValueOf(String enumStringValue)
    {
       Object value = valueLookup.get(enumStringValue);
-      if (value==null)
+      if (value == null)
       {
          long bitValue = 1;
-         long gitValue = 0;
-         for (EnumValueInfo val: values)
+         for (int i = 0; i < values.size(); i++)
          {
+            EnumValueInfo val = values.get(i);
             if (isFlags)
             {
-               valueLookup.put(val.getValue(),bitValue);
-               bitValue = bitValue * 2;
+               valueLookup.put(val.getValue(), bitValue);
+               bitValue *= 2;
             }
             else
             {
-               valueLookup.put(val.getValue(),gitValue);
-               gitValue = gitValue+1;
+               valueLookup.put(val.getValue(), (long) i);
             }
          }
          value = valueLookup.get(enumStringValue);

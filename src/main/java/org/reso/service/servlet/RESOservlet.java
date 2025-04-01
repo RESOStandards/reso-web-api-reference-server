@@ -124,7 +124,7 @@ public class RESOservlet extends HttpServlet {
                     mongoClient = MongoClients.create(syncConnStr);
                 }
                 for (ResourceInfo resource : loadedResources) {
-                    // TODO: We manually define the "Field"/"Lookup" resources above, should we move that logic within the following
+                    // @ TODO: We manually define the "Field" resource above, should we move that logic within the following
                     if(!(resource.getResourceName()).equals("Field") && !(resource.getResourceName()).equals("Lookup"))
                         try {
                             if(mongoClient != null)
