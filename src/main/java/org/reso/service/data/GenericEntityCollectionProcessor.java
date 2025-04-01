@@ -4,6 +4,7 @@ package org.reso.service.data;
 import org.apache.olingo.commons.api.data.*;
 import org.apache.olingo.commons.api.edm.EdmEntitySet;
 import org.apache.olingo.commons.api.edm.EdmEntityType;
+import org.apache.olingo.commons.api.edm.EdmNavigationProperty;
 import org.apache.olingo.commons.api.edm.EdmProperty;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -27,8 +28,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.InputStream;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.sql.*;
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 public class GenericEntityCollectionProcessor implements EntityCollectionProcessor
 {
@@ -38,6 +43,8 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
    private final String     dbType;
    HashMap<String, ResourceInfo> resourceList = null;
    private static final Logger               LOG               = LoggerFactory.getLogger(GenericEntityCollectionProcessor.class);
+   // @TODO For DD 2.0+ this default page size should be 1000.
+   private static final int PAGE_SIZE           = 100;
 
    /**
     * If you use this constructor, make sure to set your resourceInfo
@@ -96,9 +103,15 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          entitySet = getData(edmEntitySet, uriInfo, isCount, resource);
       }
 
+      TopOption topOption = uriInfo.getTopOption();
+      SkipOption skipOption = uriInfo.getSkipOption();
+      int topNumber = topOption == null ? PAGE_SIZE : topOption.getValue();
+      int skipNumber = skipOption == null ? 0 : skipOption.getValue();
+
       // 3rd: create a serializer based on the requested format (json)
       try
       {
+         entitySet.setNext(new URI(modifyUrl(request.getRawRequestUri(), topNumber, skipNumber+topNumber)));
          uriInfo.asUriInfoAll().getFormatOption().getFormat();  // If Format is given, then we will use what it has.
       }
       catch (Exception e)
@@ -112,7 +125,11 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
       // 4th: Now serialize the content: transform from the EntitySet object to InputStream
       EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
+      SelectOption selectOption = uriInfo.getSelectOption();
+      ExpandOption expandOption = uriInfo.getExpandOption();
+      String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
+              expandOption, selectOption);
+      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).selectList(selectList).build();
 
       final String id = request.getRawBaseUri() + "/" + edmEntitySet.getName();
       EntityCollectionSerializerOptions opts = null;
@@ -126,18 +143,17 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       }
       else
       {
-         SelectOption selectOption = uriInfo.getSelectOption();
          if (selectOption!=null)
          {
             opts = EntityCollectionSerializerOptions.with()
                      .contextURL(contextUrl)
-                     .select(selectOption)
+                     .select(selectOption).expand(expandOption)
                      .id(id)
                      .build();
          }
          else
          {
-            opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).build();
+            opts = EntityCollectionSerializerOptions.with().id(id).contextURL(contextUrl).expand(expandOption).build();
          }
       }
       SerializerResult serializerResult = serializer.entityCollection(serviceMetadata, edmEntityType, entitySet, opts);
@@ -154,7 +170,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
 
       EntityCollection entCollection = new EntityCollection();
 
-      List<Entity> productList = entCollection.getEntities();
+      List<Entity> entityList = entCollection.getEntities();
 
       Map<String, String> properties = System.getenv();
 
@@ -165,14 +181,7 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          String sqlCriteria = null;
          if (filter!=null)
          {
-            if (this.dbType.equals("mysql"))
-            {
-               sqlCriteria = filter.getExpression().accept(new MySQLFilterExpressionVisitor(resource));
-            }
-            else if (this.dbType.equals("postgres"))
-            {
-               sqlCriteria = filter.getExpression().accept(new PostgreSQLFilterExpressionVisitor(resource));
-            }
+            sqlCriteria = filter.getExpression().accept(new MySQLFilterExpressionVisitor(resource));
          }
          HashMap<String,Boolean> selectLookup = null;
 
@@ -189,66 +198,15 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          else
          {
             SelectOption selectOption = uriInfo.getSelectOption();
-            if (selectOption!=null)
-            {
-               selectLookup = new HashMap<>();
-               selectLookup.put(primaryFieldName,true);
-
-               for (SelectItem sel:selectOption.getSelectItems())
-               {
-                  String val = sel.getResourcePath().getUriResourceParts().get(0).toString();
-                  selectLookup.put(val,true);
-               }
-               EdmEntityType edmEntityType = edmEntitySet.getEntityType();
-               String selectList = odata.createUriHelper().buildContextURLSelectList(edmEntityType,
-                                                                                     null, selectOption);
-
-               LOG.debug("Select list:"+selectList);
-               queryString = "select "+selectList+" from " + resource.getTableName();
-            }
-            else
-            {
-               queryString = "select * from " + resource.getTableName();
-            }
+            queryString = "select * from " + resource.getTableName();
          }
          if (null!=sqlCriteria && sqlCriteria.length()>0)
          {
             queryString = queryString + " WHERE " + sqlCriteria;
          }
 
-         // Logic for $top
-         TopOption topOption = uriInfo.getTopOption();
-         if (topOption != null) {
-            int topNumber = topOption.getValue();
-            if (topNumber >= 0)
-            {
-               // Logic for $skip
-               SkipOption skipOption = uriInfo.getSkipOption();
-               if (skipOption != null)
-               {
-                  int skipNumber = skipOption.getValue();
-                  if (skipNumber >= 0)
-                  {
-                     queryString = queryString + " LIMIT "+skipNumber+", "+topNumber;
-                  }
-                  else
-                  {
-                     throw new ODataApplicationException("Invalid value for $skip", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
-                  }
-               }
-               else
-               {
-                  queryString = queryString + " LIMIT " + topNumber;
-               }
-            }
-            else
-            {
-               throw new ODataApplicationException("Invalid value for $top", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
-            }
-         }
-
          OrderByOption orderByOption = uriInfo.getOrderByOption();
-         if (orderByOption != null)
+         if (orderByOption != null && orderByOption.getOrders() != null && !orderByOption.getOrders().isEmpty())
          {
             List<OrderByItem> orderItemList = orderByOption.getOrders();
             final OrderByItem orderByItem = orderItemList.get(0); // we support only one
@@ -269,6 +227,39 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
                }
             }
          }
+
+         // Logic for $top
+         TopOption topOption = uriInfo.getTopOption();
+         int topNumber = topOption == null ? PAGE_SIZE : topOption.getValue();
+         if (topNumber != 0) {
+            if (topNumber > 0)
+            {
+               // Logic for $skip
+               SkipOption skipOption = uriInfo.getSkipOption();
+               if (skipOption != null)
+               {
+                  int skipNumber = skipOption.getValue();
+                  if (skipNumber >= 0)
+                  {
+//                     TODO: the order for skip number and top number may be flipped with atlas SQL
+                     queryString = queryString + " LIMIT "+skipNumber+", "+topNumber;
+                  }
+                  else
+                  {
+                     throw new ODataApplicationException("Invalid value for $skip", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+                  }
+               }
+               else
+               {
+                  queryString = queryString + " LIMIT " + topNumber;
+               }
+            }
+            else
+            {
+               throw new ODataApplicationException("Invalid value for $top", HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ROOT);
+            }
+         }
+
          LOG.info("SQL Query: "+queryString);
          ResultSet resultSet = statement.executeQuery(queryString);
 
@@ -287,14 +278,14 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
          {
             Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
             resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
-            productList.add(ent);
+            entityList.add(ent);
          }
          List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
 
-         if (productList.size()>0 && resourceRecordKeys.size()>0 && enumFields.size()>0)
+         if (entityList.size()>0 && resourceRecordKeys.size()>0 && enumFields.size()>0)
          {
-            queryString = "select * from lookup_value";
-            queryString = queryString + " WHERE ResourceRecordKey in (\"" + String.join("','", resourceRecordKeys ) + "\")";
+            queryString = "SELECT * FROM lookup_value";
+            queryString += " WHERE ResourceRecordKey IN ('" + String.join("', '", resourceRecordKeys) + "')";
 
             LOG.info("SQL Query: "+queryString);
             resultSet = statement.executeQuery(queryString);
@@ -305,16 +296,40 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
             {
                CommonDataProcessing.getEntityValues(resultSet, entities, enumFields);
             }
-            for (Entity product :productList)
+            for (Entity entity :entityList)
             {
                // The getValue should already be a String, so the toString should just pass it through, while making the following assignment simple.
-               String key = product.getProperty(primaryFieldName).getValue().toString();
+               String key = entity.getProperty(primaryFieldName).getValue().toString();
                HashMap<String, Object> enumValues = entities.get(key);
-               CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+               if(enumValues != null)
+                  CommonDataProcessing.setEntityEnums(enumValues,entity,enumFields);
+
+
             }
          }
-
          statement.close();
+
+         int index = 0;
+         for (Entity entity : entityList) {
+            for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
+               UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+               if (uriResource instanceof UriResourceNavigation) {
+                  EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+                  String navPropName = edmNavigationProperty.getName();
+
+                  EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, entity, resource, resourceRecordKeys.get(index++));
+
+                  Link link = new Link();
+                  link.setTitle(navPropName);
+                  if (edmNavigationProperty.isCollection())
+                     link.setInlineEntitySet(expandEntityCollection);
+                  else
+                     link.setInlineEntity(expandEntityCollection.getEntities().get(0));
+
+                  entity.getNavigationLinks().add(link);
+               }
+            }
+         }
 
       } catch (Exception e) {
             LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
@@ -322,6 +337,32 @@ public class GenericEntityCollectionProcessor implements EntityCollectionProcess
       }
 
       return entCollection;
+   }
+
+   private static String modifyUrl(String url, Integer topValue, Integer skipValue) {
+      url = modifyParameter(url, "\\$top=\\d+", "\\$top", topValue);
+      url = modifyParameter(url, "\\$skip=\\d+", "\\$skip", skipValue);
+      return url;
+   }
+
+   // Helper method to replace or append a parameter
+   private static String modifyParameter(String url, String pattern, String paramName, Integer value) {
+      Pattern p = Pattern.compile(pattern);
+      Matcher m = p.matcher(url);
+
+      if (value != null) {
+         String replacement = paramName + "=" + value;
+         // Check if the parameter already exists
+         if (m.find()) {
+            // Replace existing parameter
+            url = m.replaceFirst(replacement);
+         } else {
+            // Append parameter, handling both cases: with and without existing query
+            url += (url.contains("?") ? "&" : "?") + replacement.replace("\\","");
+         }
+      }
+
+      return url;
    }
 
 }

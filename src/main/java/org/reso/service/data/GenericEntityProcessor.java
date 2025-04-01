@@ -1,10 +1,14 @@
 package org.reso.service.data;
 
 
+import com.google.gson.Gson;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoClients;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoDatabase;
+import com.mongodb.jdbc.MongoConnection;
 import org.apache.olingo.commons.api.data.*;
-import org.apache.olingo.commons.api.edm.EdmEntitySet;
-import org.apache.olingo.commons.api.edm.EdmEntityType;
-import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
+import org.apache.olingo.commons.api.edm.*;
 import org.apache.olingo.commons.api.ex.ODataRuntimeException;
 import org.apache.olingo.commons.api.format.ContentType;
 import org.apache.olingo.commons.api.http.HttpHeader;
@@ -15,17 +19,19 @@ import org.apache.olingo.server.api.deserializer.ODataDeserializer;
 import org.apache.olingo.server.api.processor.EntityProcessor;
 import org.apache.olingo.server.api.serializer.EntitySerializerOptions;
 import org.apache.olingo.server.api.serializer.ODataSerializer;
+import org.apache.olingo.server.api.serializer.SerializerException;
 import org.apache.olingo.server.api.serializer.SerializerResult;
-import org.apache.olingo.server.api.uri.UriInfo;
-import org.apache.olingo.server.api.uri.UriParameter;
-import org.apache.olingo.server.api.uri.UriResource;
-import org.apache.olingo.server.api.uri.UriResourceEntitySet;
+import org.apache.olingo.server.api.uri.*;
+import org.apache.olingo.server.api.uri.queryoption.ExpandItem;
+import org.apache.olingo.server.api.uri.queryoption.ExpandOption;
+import org.apache.olingo.server.api.uri.queryoption.SelectItem;
+import org.apache.olingo.server.api.uri.queryoption.SelectOption;
+import org.bson.Document;
 import org.reso.service.data.common.CommonDataProcessing;
+import org.reso.service.data.definition.FieldDefinition;
 import org.reso.service.data.meta.EnumFieldInfo;
-import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
 import org.reso.service.data.meta.ResourceInfo;
-import org.reso.service.data.meta.builder.FieldObject;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,6 +39,8 @@ import java.io.InputStream;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.sql.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static org.reso.service.servlet.RESOservlet.resourceLookup;
@@ -72,22 +80,25 @@ public class GenericEntityProcessor implements EntityProcessor
 
       // 2. retrieve the data from backend
       List<UriParameter> keyPredicates = uriResourceEntitySet.getKeyPredicates();
-      Entity entity;
-      if (resource.useCustomDatasource() )
-      {
-         entity = resource.getData(edmEntitySet, keyPredicates);
-      }
-      else
-      {
-         entity = getData(edmEntitySet, keyPredicates, resource);
-      }
+      Entity entity = Optional.ofNullable(resource.useCustomDatasource()
+            ? resource.getData(edmEntitySet, keyPredicates)
+            : getData(edmEntitySet, keyPredicates, resource, uriInfo))
+        .orElseThrow(() -> new ODataApplicationException(
+            "Entity not found",
+            HttpStatusCode.NOT_FOUND.getStatusCode(),
+            Locale.ENGLISH
+        ));
 
-      // 3. serialize
-      EdmEntityType entityType = edmEntitySet.getEntityType();
+        // 3. serialize
+        EdmEntityType entityType = edmEntitySet.getEntityType();
+        SelectOption selectOption = uriInfo.getSelectOption();
+        ExpandOption expandOption = uriInfo.getExpandOption();
+        String selectList = odata.createUriHelper().buildContextURLSelectList(entityType,
+                expandOption, selectOption);
 
-      ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
-      // expand and select currently not supported
-      EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).build();
+        ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).selectList(selectList).build();
+        // expand and select currently not supported
+        EntitySerializerOptions options = EntitySerializerOptions.with().contextURL(contextUrl).select(selectOption).expand(expandOption).build();
 
       ODataSerializer serializer = odata.createSerializer(responseFormat);
       SerializerResult serializerResult = serializer.entity(serviceMetadata, entityType, entity, options);
@@ -108,13 +119,13 @@ public class GenericEntityProcessor implements EntityProcessor
     */
    private HashMap<String,Object> getDataToHash(List<UriParameter> keyPredicates, ResourceInfo resource)
    {
-      return CommonDataProcessing.translateEntityToMap(this.getData(null, keyPredicates, resource));
+      return CommonDataProcessing.translateEntityToMap(this.getData(null, keyPredicates, resource, null));
    }
 
-   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource) {
+   protected Entity getData(EdmEntitySet edmEntitySet, List<UriParameter> keyPredicates, ResourceInfo resource, UriInfo uriInfo) {
       ArrayList<FieldInfo> fields = resource.getFieldList();
 
-      Entity product = null;
+      Entity entity = null;
 
       List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
 
@@ -152,25 +163,26 @@ public class GenericEntityProcessor implements EntityProcessor
             queryString = queryString + " WHERE " + sqlCriteria;
          }
 
-         LOG.info("SQL Query: "+queryString);
+         String primaryFieldName = resource.getPrimaryKeyName();
+         HashMap<String, Boolean> selectLookup = null;
+
          ResultSet resultSet = statement.executeQuery(queryString);
 
-         String primaryFieldName = resource.getPrimaryKeyName();
          ArrayList<String> resourceRecordKeys = new ArrayList<>();
 
          // add the lookups from the database.
          while (resultSet.next())
          {
-            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,null);
+            Entity ent = CommonDataProcessing.getEntityFromRow(resultSet,resource,selectLookup);
             resourceRecordKeys.add( ent.getProperty(primaryFieldName).getValue().toString() );
 
-            product = ent;
+            entity = ent;
          }
 
-         if (product!=null && resourceRecordKeys.size()>0 && enumFields.size()>0)
+         if (entity!=null && resourceRecordKeys.size()>0 && enumFields.size()>0)
          {
             queryString = "select * from lookup_value";
-            queryString = queryString + " WHERE ResourceRecordKey in (\"" + String.join("','", resourceRecordKeys ) + "\")";
+            queryString = queryString + " WHERE ResourceRecordKey in ('" + String.join("','", resourceRecordKeys ) + "')";
 
             LOG.info("SQL Query: "+queryString);
             resultSet = statement.executeQuery(queryString);
@@ -184,17 +196,35 @@ public class GenericEntityProcessor implements EntityProcessor
             {
                CommonDataProcessing.getEntityValues(resultSet, entities, enumFields);
             }
-            CommonDataProcessing.setEntityEnums(enumValues,product,enumFields);
+            CommonDataProcessing.setEntityEnums(enumValues,entity,enumFields);
 
          }
          statement.close();
+         for (ExpandItem expandItem : uriInfo.getExpandOption().getExpandItems()) {
+            UriResource uriResource = expandItem.getResourcePath().getUriResourceParts().get(0);
+            if (uriResource instanceof UriResourceNavigation) {
+                EdmNavigationProperty edmNavigationProperty = ((UriResourceNavigation) uriResource).getProperty();
+                String navPropName = edmNavigationProperty.getName();
+
+                EntityCollection expandEntityCollection = CommonDataProcessing.getExpandEntityCollection(connect, edmNavigationProperty, entity, resource, resourceRecordKeys.get(0));
+
+                Link link = new Link();
+                link.setTitle(navPropName);
+                if (edmNavigationProperty.isCollection())
+                    link.setInlineEntitySet(expandEntityCollection);
+                else
+                    link.setInlineEntity(expandEntityCollection.getEntities().get(0));
+
+                entity.getNavigationLinks().add(link);
+            }
+        }
 
       } catch (Exception e) {
          LOG.error("Server Error occurred in reading "+resource.getResourceName(), e);
-         return product;
+         return entity;
       }
 
-      return product;
+      return entity;
    }
 
    private URI createId(String entitySetName, Object id) {
@@ -226,21 +256,31 @@ public class GenericEntityProcessor implements EntityProcessor
       // 2.2 do the creation in backend, which returns the newly created entity
       HashMap<String, Object> mappedObj = CommonDataProcessing.translateEntityToMap(requestEntity);
 
-      List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
-      HashMap<String, Object>  enumValues = new HashMap<>();
-      for (FieldInfo field: enumFields)
-      {
-         // We remove all entities that are collections to save to the lookup_value table separately. @TODO: save these values
-         if (field.isCollection())
-         {
+        List<FieldInfo> enumFields = CommonDataProcessing.gatherEnumFields(resource);
+        HashMap<String, Object> enumValues = new HashMap<>();
+        for (FieldInfo field : enumFields) {
+            EnumFieldInfo enumField = (EnumFieldInfo) field;
+            // We remove all entities that are collections to save to the lookup_value table separately. @TODO: save these values
             String fieldName = field.getFieldName();
             Object value = mappedObj.remove(fieldName);
-            enumValues.put(fieldName, value);
-         }
-      }
-
-      saveData(resource, mappedObj);
-      saveEnumData(resource, enumValues);
+            if (field.isCollection() && !((List) value).isEmpty())
+                enumValues.put(fieldName, Arrays.asList(((List<Long>) value).stream().map(x -> enumField.getKeyByIndex((int)(long)x)).toArray()));
+            else if (field.isFlags() && value != null) {
+                enumValues.put(fieldName,Arrays.asList(Arrays.stream(enumField.expandFlags((int)(long)(Long) value)).mapToObj(x -> enumField.getKeyByIndex((int)x)).toArray()));
+            }
+            else if (!field.isCollection() && value != null)
+                enumValues.put(fieldName, enumField.getKeyByIndex((int)(long)(Long)value));
+        }
+        try {
+            if (connect instanceof com.mongodb.jdbc.MongoConnection) {
+                saveDataMongo(resource, mappedObj);
+            } else {
+                saveData(resource, mappedObj);
+            }
+        } catch (SQLException e) {
+            throw new RuntimeException(e);
+        }
+        saveEnumData(resource, enumValues, (String) mappedObj.get(resource.getPrimaryKeyName()));
 
       // 3. serialize the response (we have to return the created entity)
       ContextURL contextUrl = ContextURL.with().entitySet(edmEntitySet).build();
@@ -258,12 +298,13 @@ public class GenericEntityProcessor implements EntityProcessor
    }
 
 
-   private void saveData(ResourceInfo resource, HashMap<String, Object> mappedObj)
-   {
-      String queryString = "insert into " + resource.getTableName();
-      try
-      {
-         Statement statement = connect.createStatement();
+    private void saveData(ResourceInfo resource, HashMap<String, Object> mappedObj) throws SQLException {
+        connect.setAutoCommit(false);  // Use transaction control
+        String queryString = "insert into " + resource.getTableName();
+        try {
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd"); // For SQL DATE
+
+          Statement statement = connect.createStatement();
          ArrayList<String> columnNames = new ArrayList<>();
          ArrayList<String> columnValues = new ArrayList<>();
 
@@ -277,6 +318,7 @@ public class GenericEntityProcessor implements EntityProcessor
 
          for (Map.Entry<String,Object> entrySet: mappedObj.entrySet())
          {
+            Gson gson =  new Gson();
             String key = entrySet.getKey();
             Object value = entrySet.getValue();
             columnNames.add(key);
@@ -289,11 +331,21 @@ public class GenericEntityProcessor implements EntityProcessor
             }
             else if (field.getType().equals(EdmPrimitiveTypeKind.String.getFullQualifiedName()))
             {
-               columnValues.add('"'+value.toString()+'"');
+               boolean isList = value instanceof ArrayList;
+               columnValues.add("'"+ (isList ? gson.toJson(value):value.toString()) +"'");
             }
             else if (field.getType().equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName()))
             {
-               columnValues.add('"'+value.toString()+'"');
+                columnValues.add("'" + value.toString() + "'");
+            }
+            else if (field.getType().equals(EdmPrimitiveTypeKind.Date.getFullQualifiedName()))
+            {
+                if (value instanceof GregorianCalendar) {
+                    String formattedDate = dateFormat.format(((GregorianCalendar) value).getTime());
+                    columnValues.add("'" + formattedDate + "'");
+                } else {
+                    columnValues.add("'" + value.toString() + "'");
+                }
             }
             else
             {
@@ -304,23 +356,66 @@ public class GenericEntityProcessor implements EntityProcessor
 
          queryString = queryString+" ("+String.join(",",columnNames)+") values ("+String.join(",",columnValues)+")";
 
-         //boolean success = statement.execute(queryString);
-      }
-      catch (SQLException e)
-      {
-         LOG.error(e.getMessage());
-      }
-      // Result set get the result of the SQL query
-   }
+            boolean success = statement.execute(queryString);
+        } catch (SQLException e) {
+            throw e;
+        }
+        // Result set get the result of the SQL query
+    }
 
-   private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues)
-   {
-      for (String key: enumValues.keySet() )
-      {
-         Object value = enumValues.get(key);
-         saveEnumData(resource, key, value);
-      }
-   }
+    private void saveDataMongo(ResourceInfo resource, HashMap<String, Object> mappedObj) {
+        Map<String, String> env = System.getenv();
+        String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
+
+        try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
+            MongoDatabase database = mongoClient.getDatabase("reso");
+            MongoCollection<Document> collection = database.getCollection(resource.getTableName());
+
+            Document document = new Document();
+
+            ArrayList<FieldInfo> fieldList = resource.getFieldList();
+            HashMap<String, FieldInfo> fieldLookup = new HashMap<>();
+
+            for (FieldInfo field : fieldList) {
+                fieldLookup.put(field.getFieldName(), field);
+            }
+
+            for (Map.Entry<String, Object> entry : mappedObj.entrySet()) {
+                String key = entry.getKey();
+                Object value = entry.getValue();
+
+                FieldInfo field = fieldLookup.get(key);
+                FullQualifiedName fieldType = field.getType();
+                if (value != null) {
+                    if (fieldType.equals(EdmPrimitiveTypeKind.String.getFullQualifiedName())) {
+                        document.append(key, value);
+                    } else if (fieldType.equals(EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName())) {
+                        // Assuming the date is in ISO format or needs to be converted to a Date object
+                        try {
+                            document.append(key, new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss.SSSZ").parse(value.toString()));
+                        } catch (ParseException e) {
+                            LOG.error("Date parsing error", e);
+                        }
+                    } else {
+                        document.append(key, value);
+                    }
+                } else {
+                    document.append(key, null);
+                }
+            }
+            collection.insertOne(document);
+        }
+    }
+
+    private void saveEnumData(ResourceInfo resource, HashMap<String, Object> enumValues, String resourceRecordKey) {
+        for (String key : enumValues.keySet()) {
+            Object value = enumValues.get(key);
+            if (connect instanceof com.mongodb.jdbc.MongoConnection)
+                saveEnumDataMongo(resource, key, value, resourceRecordKey);
+            else
+                saveEnumData(resource, key, value, resourceRecordKey);
+        }
+    }
 
 
    /**
@@ -340,48 +435,74 @@ public class GenericEntityProcessor implements EntityProcessor
     * +--------------------------+------------+------+-----+---------------------+-------------------------------+
     * @param resource
     * @param values
+    * @param resourceRecordKey
     */
-   private void saveEnumData(ResourceInfo resource, String lookupEnumField, Object values)
-   {
-      String queryString = "insert into lookup_value";
+    private void saveEnumData(ResourceInfo resource, String lookupEnumField, Object values, String resourceRecordKey) {
+       String queryString = "INSERT INTO lookup_value (FieldName, LookupKey, ResourceName, ResourceRecordKey) VALUES (?, ?, ?, ?)";
 
-      /**
-       String value = resultSet.getString("LookupKey");
-       String fieldName = resultSet.getString("FieldName");
-       String resourceRecordKey = resultSet.getString("ResourceRecordKey");
-       */
+        try {
+            PreparedStatement statement = connect.prepareStatement(queryString);
 
-      try
-      {
-         Statement statement = connect.createStatement();
-         List<String> columnNames = Arrays.asList("FieldName","LookupKey");
+           List<Object> valueList = new ArrayList<>();
 
-         ArrayList valueArray;
+           if (values instanceof List) {
+               valueList.addAll((List) values);
+           } else {
+               valueList.add(values);
+           }
 
-         if (values instanceof ArrayList)
-         {
-            valueArray = (ArrayList) values;
-         }
-         else
-         {
-            ArrayList temp = new ArrayList();
-            temp.add(values);
-            valueArray = temp;
-         }
+           for (Object value : valueList) {
+               statement.setString(1, lookupEnumField);
+               statement.setString(2, value.toString());
+               statement.setString(3, resource.getResourcesName());
+               statement.setString(4, resourceRecordKey);
 
-         for (Object value : valueArray)
-         {
-            ArrayList<String> columnValues = new ArrayList(Arrays.asList(lookupEnumField,value.toString()));
-         }
+               statement.addBatch();  // Add this prepared statement to the batch
+           }
 
-      }
-      catch (SQLException e)
-      {
-         LOG.error(e.getMessage());
-      }
-
+           statement.executeBatch();  // Execute all the batched statements
+           connect.commit();  // Commit transaction
+           statement.close(); // Close the statement after commit
+       } catch (SQLException e) {
+           LOG.error("Error inserting data into SQL database", e);
+           try {
+               if (connect != null) connect.rollback();  // Roll back transaction in case of error
+           } catch (SQLException ex) {
+               LOG.error("Error during transaction rollback", ex);
+           }
+       }
    }
 
+   private void saveEnumDataMongo(ResourceInfo resource, String lookupEnumField, Object values, String resourceRecordKey) {
+        Map<String, String> env = System.getenv();
+        String syncConnStr = env.get("MONGO_SYNC_CONNECTION_STR");
+
+        try (MongoClient mongoClient = MongoClients.create(syncConnStr)) {
+            MongoDatabase database = mongoClient.getDatabase("reso"); // Specify your database name
+            MongoCollection<Document> collection = database.getCollection("lookup_value"); // Adjust the collection name as needed
+
+            List<Object> valueList = new ArrayList<>();
+            if (values instanceof List) {
+                valueList.addAll((List) values);
+            } else {
+                valueList.add(values);
+            }
+
+            List<Document> documents = new ArrayList<>();
+            for (Object value : valueList) {
+                Document doc = new Document()
+                        .append("FieldName", lookupEnumField)
+                        .append("ResourceName", resource.getResourcesName())
+                        .append("ResourceRecordKey", resourceRecordKey)
+                        .append("LookupKey", value.toString());
+                documents.add(doc);
+            }
+
+            if (!documents.isEmpty()) {
+                collection.insertMany(documents);
+            }
+        }
+    }
 
    @Override public void updateEntity(ODataRequest request, ODataResponse response, UriInfo uriInfo, ContentType requestFormat, ContentType responseFormat)
             throws ODataApplicationException, ODataLibraryException

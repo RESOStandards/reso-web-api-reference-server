@@ -17,6 +17,8 @@ public class FieldInfo
    private Integer maxLength                 = null;
    private Integer precision                 = null;
    private Integer scale                     = null;
+   private boolean isCollection = false;
+   private boolean isExpansion = false;
 
    private ArrayList<CsdlAnnotation> annotations = null;
 
@@ -123,7 +125,11 @@ public class FieldInfo
 
    public boolean isCollection()
    {
-      return false;
+      return isCollection;
+   }
+
+   public boolean isExpansion() {
+      return isExpansion;
    }
 
    public boolean isFlags()
@@ -135,4 +141,13 @@ public class FieldInfo
    {
       return false;
    }
+
+   public void setCollection()
+   {
+      isCollection = true;
+   }
+
+    public void setExpansion() {
+        isExpansion = true;
+    }
 }
