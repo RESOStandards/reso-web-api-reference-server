@@ -1,12 +1,17 @@
 package org.reso.service.data.definition;
 
-
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.MongoCollection;
+import com.mongodb.client.MongoCursor;
 import org.apache.olingo.commons.api.edm.EdmPrimitiveTypeKind;
-import org.apache.olingo.commons.api.edm.provider.CsdlProperty;
+import org.apache.olingo.commons.api.edm.FullQualifiedName;
+import org.bson.Document;
 import org.reso.service.data.meta.EnumFieldInfo;
 import org.reso.service.data.meta.EnumValueInfo;
 import org.reso.service.data.meta.FieldInfo;
-import org.reso.service.data.meta.ResourceInfo;
+import org.reso.service.data.meta.GenericResourceInfo;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.sql.Connection;
 import java.util.ArrayList;
@@ -14,87 +19,95 @@ import java.util.HashMap;
 
 import static org.reso.service.data.common.CommonDataProcessing.loadAllResource;
 
-public class LookupDefinition extends ResourceInfo
-{
-   private static ArrayList<FieldInfo> fieldList = null;
-   private static HashMap<String, HashMap<String,Object>> lookupCache = new HashMap<>();
+public class LookupDefinition extends GenericResourceInfo {
+   private static final Logger LOG = LoggerFactory.getLogger(LookupDefinition.class);
+   private static volatile ArrayList<FieldInfo> fieldList = null;
+   private static final Object fieldListLock = new Object();
+   private static HashMap<String, HashMap<String, String>> lookupCache = new HashMap<>();
+   private static HashMap<String, HashMap<String, String>> reverseLookupCache = new HashMap<>();
+   private static final String METADATA_DISPLAYNAME = "RESO.OData.Metadata.DisplayName";
+   private static final String LOOKUP = "lookup";
+   private static final String LOOKUP_KEY = "LookupKey";
+   private static final String LOOKUP_NAME = "LookupName";
+   private static final String LOOKUP_VALUE = "LookupValue";
+   private static final String STANDARD_LOOKUP_VALUE = "StandardLookupValue";    
+   private static final String LEGACY_ODATA_VALUE = "LegacyODataValue";
+   private static final String MODIFICATION_TIMESTAMP = "ModificationTimestamp";
 
-   public LookupDefinition()
-   {
-      this.tableName = "lookup";
-      this.resourcesName = "Lookup";
-      this.resourceName = "Lookup";
+   public LookupDefinition() {
+      super(LOOKUP, LOOKUP);
+      // Ensure fieldList is initialized through the getStaticFieldList method
+      getStaticFieldList();
    }
 
-   public ArrayList<FieldInfo> getFieldList()
-   {
-      return LookupDefinition.getStaticFieldList();
+   @Override
+   public void findMongoPrimaryKey(MongoClient mongoClient) {
+      this.primaryKeyName = LOOKUP_KEY;
    }
 
-   public static ArrayList<FieldInfo> getStaticFieldList()
-   {
-      if (null!= LookupDefinition.fieldList)
-      {
-         return LookupDefinition.fieldList;
+   public ArrayList<FieldInfo> getFieldList() {
+      return getStaticFieldList();
+   }
+
+   public static ArrayList<FieldInfo> getStaticFieldList() {
+      if (fieldList == null) {
+         synchronized (fieldListLock) {
+            if (fieldList == null) {
+               ArrayList<FieldInfo> list = new ArrayList<>();
+               
+               FieldInfo fieldInfo = new FieldInfo(LOOKUP_KEY, EdmPrimitiveTypeKind.String.getFullQualifiedName());
+               fieldInfo.addAnnotation("Lookup Key Field", METADATA_DISPLAYNAME);
+               list.add(fieldInfo);
+
+               fieldInfo = new FieldInfo(LOOKUP_NAME, EdmPrimitiveTypeKind.String.getFullQualifiedName());
+               list.add(fieldInfo);
+
+               fieldInfo = new FieldInfo(LOOKUP_VALUE, EdmPrimitiveTypeKind.String.getFullQualifiedName());
+               list.add(fieldInfo);
+
+               fieldInfo = new FieldInfo(STANDARD_LOOKUP_VALUE, EdmPrimitiveTypeKind.String.getFullQualifiedName());
+               list.add(fieldInfo);
+
+               fieldInfo = new FieldInfo(LEGACY_ODATA_VALUE, EdmPrimitiveTypeKind.String.getFullQualifiedName());
+               list.add(fieldInfo);
+
+               fieldInfo = new FieldInfo(MODIFICATION_TIMESTAMP, EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
+               list.add(fieldInfo);
+
+               fieldList = list;
+            }
+         }
       }
-
-      ArrayList<FieldInfo> list = new ArrayList<FieldInfo>();
-      LookupDefinition.fieldList = list;
-      FieldInfo fieldInfo = null;
-
-      fieldInfo = new FieldInfo("LookupKey", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      fieldInfo.addAnnotation("Lookup Key Field", "RESO.OData.Metadata.DisplayName");
-      list.add(fieldInfo);
-
-      fieldInfo = new FieldInfo("LookupName", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      list.add( fieldInfo);
-
-      fieldInfo = new FieldInfo("LookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      list.add(fieldInfo);
-
-      fieldInfo = new FieldInfo("StandardLookupValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      list.add(fieldInfo);
-
-      fieldInfo = new FieldInfo("LegacyOdataValue", EdmPrimitiveTypeKind.String.getFullQualifiedName());
-      list.add(fieldInfo);
-
-      fieldInfo = new FieldInfo("ModificationTimestamp", EdmPrimitiveTypeKind.DateTimeOffset.getFullQualifiedName());
-      list.add(fieldInfo);
-
-      /**
-      //// Enum Test code
-      EnumFieldInfo enumFieldInfo = new EnumFieldInfo("EnumTest", EdmPrimitiveTypeKind.Int64.getFullQualifiedName());
-
-      enumFieldInfo.setLookupName("EnumTest");
-      //enumFieldInfo.setCollection();
-      enumFieldInfo.setFlags();
-
-      EnumValueInfo enumValue = new EnumValueInfo("Awnings");
-      enumFieldInfo.addValue(enumValue);
-      enumValue = new EnumValueInfo("Boatslip");
-      enumFieldInfo.addValue(enumValue);
-      list.add(enumFieldInfo);
-
-      // END Test code
-      /**/
-
-
-      return LookupDefinition.fieldList;
+      return fieldList;
    }
 
-   public static void loadCache(Connection connect, LookupDefinition resource)
-   {
-      ArrayList<HashMap<String, Object>> lookups = loadAllResource(connect, resource);
-      String pKey = resource.getPrimaryKeyName();
-      for (HashMap<String, Object> lookup: lookups)
-      {
-         lookupCache.put(lookup.get(pKey).toString(),lookup);
+   public static void loadCache(MongoClient mongoClient, LookupDefinition defn) {
+      try {
+         MongoCollection<Document> collection = mongoClient.getDatabase("reso").getCollection(defn.getTableName());
+         MongoCursor<Document> cursor = collection.find().iterator();
+
+         while (cursor.hasNext()) {
+            Document doc = cursor.next();
+            String lookupName = doc.getString(LOOKUP_NAME);
+            String lookupValue = doc.getString(LOOKUP_VALUE);
+            String lookupKey = doc.getString(LOOKUP_KEY);
+
+            lookupCache.putIfAbsent(lookupName, new HashMap<>());
+            lookupCache.get(lookupName).put(lookupKey, lookupValue);
+
+            reverseLookupCache.putIfAbsent(lookupName, new HashMap<>());
+            reverseLookupCache.get(lookupName).put(lookupValue, lookupKey);
+         }
+      } catch (Exception e) {
+         LOG.error("Error loading lookup cache from MongoDB", e);
       }
    }
 
-   public static HashMap<String, HashMap<String,Object>> getLookupCache()
-   {
+   public static HashMap<String, HashMap<String, String>> getLookupCache() {
       return LookupDefinition.lookupCache;
    }
 
+   public static HashMap<String, HashMap<String, String>> getReverseLookupCache() {
+      return LookupDefinition.reverseLookupCache;
+   }
 }
