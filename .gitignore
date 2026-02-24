@@ -20,6 +20,8 @@ hs_err_pid*
 /web
 /build
 /.idea
+/.vscode
+/results
 
 # Project Genereated files
 .pmd

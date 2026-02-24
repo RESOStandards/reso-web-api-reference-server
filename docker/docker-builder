@@ -1,11 +1,34 @@
-FROM ubuntu:20.10
+FROM debian:bullseye
 
 WORKDIR /usr/src/app
-# Comment next line out for Windows builds
+
+# Set non-interactive mode for apt-get
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y wget openjdk-8-jdk curl pip maven docker-compose
 
-# Needed for Windows builds
-#RUN update-java-alternatives -s java-1.8.0-openjdk-amd64
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+    wget \
+    openjdk-11-jdk \
+    curl \
+    python3-pip \
+    git \
+    dos2unix \
+    && rm -rf /var/lib/apt/lists/*
 
-CMD sh /usr/src/app/docker/scripts/build.sh
+RUN pip3 install docker-compose
+
+# Switch to Java 11
+RUN update-java-alternatives -s java-1.11.0-openjdk-amd64
+
+# Copy the entire project structure
+COPY . /usr/src/app/
+
+# Make gradlew executable and fix line endings
+RUN chmod +x /usr/src/app/gradlew && dos2unix /usr/src/app/gradlew
+
+# Set environment variable for cert report filename
+ARG CERT_REPORT_FILENAME=RESODataDictionary-2.0.metadata-report.json
+ENV CERT_REPORT_FILENAME=${CERT_REPORT_FILENAME}
+
+# Default command to run the build (inline to avoid file creation issues)
+CMD ["/bin/bash", "-c", "set -e && echo '🧹 Cleaning build directory...' && rm -rf build && echo '🚀 Running Gradle packageCore task...' && ./gradlew packageCore && echo '✅ Gradle packaging successful!'"]
