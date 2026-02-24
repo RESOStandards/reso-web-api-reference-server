@@ -9,6 +9,7 @@ import org.apache.olingo.server.api.ODataApplicationException;
 import org.apache.olingo.server.api.uri.UriResource;
 import org.apache.olingo.server.api.uri.UriResourcePrimitiveProperty;
 import org.apache.olingo.server.api.uri.queryoption.expression.*;
+import org.reso.service.data.definition.FilterCondition;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +34,7 @@ public class BreakdownOfFilterExpressionVisitor implements ExpressionVisitor<Str
       put(BinaryOperatorKind.SUB, " - ");
    }};
 
-   private final HashMap<String,String> representations = new HashMap<>();
+   private final HashMap<String, FilterCondition> representations = new HashMap<>();
 
    private final ResourceInfo resourceInfo;
 
@@ -41,28 +42,25 @@ public class BreakdownOfFilterExpressionVisitor implements ExpressionVisitor<Str
       this.resourceInfo = resourceInfo;
    }
 
-   public HashMap<String,String> getRepresentations()
-   {
+   public HashMap<String, FilterCondition> getRepresentations() {
       return representations;
    }
 
+   // TODO: Support AND/OR operators
    @Override
    public String visitBinaryOperator(BinaryOperatorKind operator, String left, String right)
-            throws ExpressionVisitException, ODataApplicationException
-   {
+           throws ExpressionVisitException, ODataApplicationException {
       String strOperator = BINARY_OPERATORS.get(operator);
 
       if (strOperator == null) {
          throw new ODataApplicationException("Unsupported binary operation: " + operator.name(),
-                                             operator == BinaryOperatorKind.HAS ?
-                                                      HttpStatusCode.NOT_IMPLEMENTED.getStatusCode() :
-                                                      HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
+                 operator == BinaryOperatorKind.HAS ?
+                         HttpStatusCode.NOT_IMPLEMENTED.getStatusCode() :
+                         HttpStatusCode.BAD_REQUEST.getStatusCode(), Locale.ENGLISH);
       }
-      // ResourceName eq 'Property' becomes (=, ResourceName, Property)
-      if ( "=".equals(strOperator.trim() ) )  // We only want the equals operator from the filter.  Assume all are AND ops for now if there are multiples.
-      { // @TODO: Make this filter more robust for queries
-         representations.put(left,right);
-      }
+
+      representations.put(left, new FilterCondition(strOperator.trim(), right));
+
       return left + strOperator + right;
    }
 

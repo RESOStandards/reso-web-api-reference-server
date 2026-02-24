@@ -1,0 +1,673 @@
+{
+    "Property": [
+        {
+            "navProperty": "BuyerAgent",
+            "targetCollection": "Member",
+            "sourceKey": "BuyerAgentKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "BuyerOffice",
+            "targetCollection": "Office",
+            "sourceKey": "BuyerOfficeKey",
+            "targetKey": "OfficeKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "BuyerTeam",
+            "targetCollection": "Teams",
+            "sourceKey": "BuyerTeamKey",
+            "targetKey": "TeamKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "CoBuyerAgent",
+            "targetCollection": "Member",
+            "sourceKey": "CoBuyerAgentKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "CoBuyerOffice",
+            "targetCollection": "Office",
+            "sourceKey": "CoBuyerOfficeKey",
+            "targetKey": "OfficeKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "CoListAgent",
+            "targetCollection": "Member",
+            "sourceKey": "CoListAgentKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "CoListOffice",
+            "targetCollection": "Office",
+            "sourceKey": "CoListOfficeKey",
+            "targetKey": "OfficeKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "GreenBuildingVerification",
+            "targetCollection": "PropertyGreenVerification",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": true
+        },
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "ListAgent",
+            "targetCollection": "Member",
+            "sourceKey": "ListAgentKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ListOffice",
+            "targetCollection": "Office",
+            "sourceKey": "ListOfficeKey",
+            "targetKey": "OfficeKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ListTeam",
+            "targetCollection": "Teams",
+            "sourceKey": "ListTeamKey",
+            "targetKey": "TeamKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OpenHouse",
+            "targetCollection": "OpenHouse",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": true
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "PowerProduction",
+            "targetCollection": "PropertyPowerProduction",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": true
+        },
+        {
+            "navProperty": "Rooms",
+            "targetCollection": "PropertyRooms",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": true
+        },
+        {
+            "navProperty": "SocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "UnitTypes",
+            "targetCollection": "PropertyUnitTypes",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": true
+        }
+    ],
+    "ContactListingNotes": [
+        {
+            "navProperty": "Contact",
+            "targetCollection": "Contacts",
+            "sourceKey": "ContactKey",
+            "targetKey": "ContactKey",
+            "isCollection": false
+        }
+    ],
+    "ContactListings": [
+        {
+            "navProperty": "Contact",
+            "targetCollection": "Contacts",
+            "sourceKey": "ContactKey",
+            "targetKey": "ContactKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "Listing",
+            "targetCollection": "Property",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ListingNotes",
+            "targetCollection": "ContactListingNotes",
+            "sourceKey": null,
+            "targetKey": "ContactKey",
+            "isCollection": true
+        }
+    ],
+    "Contacts": [
+        {
+            "navProperty": "ContactsOtherPhone",
+            "targetCollection": "OtherPhone",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "ContactsSocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "ResourceRecordKey,ResourceName",
+            "isCollection": false
+        },
+        {
+            "navProperty": "OwnerMember",
+            "targetCollection": "Member",
+            "sourceKey": "OwnerMemberKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "InternetTracking": [
+        {
+            "navProperty": "ActorOriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ActorOriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ActorSourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ActorSourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "EventOriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "EventOriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "EventSourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "EventSourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ObjectOriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ObjectOriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ObjectSourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ObjectSourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "Member": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "MemberOtherPhone",
+            "targetCollection": "OtherPhone",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "MemberSocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Office",
+            "targetCollection": "Office",
+            "sourceKey": "OfficeKey",
+            "targetKey": "OfficeKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "Office": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "MainOffice",
+            "targetCollection": "Office",
+            "sourceKey": "MainOfficeKey",
+            "targetKey": "OfficeKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OfficeBroker",
+            "targetCollection": "Member",
+            "sourceKey": "OfficeBrokerKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "OfficeManager",
+            "targetCollection": "Member",
+            "sourceKey": "OfficeManagerKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "OfficeSocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "OUID": [
+        {
+            "navProperty": "ChangedByMember",
+            "targetCollection": "Member",
+            "sourceKey": "ChangedByMemberKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OrganizationSocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": null,
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": true
+        }
+    ],
+    "PropertyGreenVerification": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Listing",
+            "targetCollection": "Property",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": false
+        }
+    ],
+    "PropertyPowerProduction": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Listing",
+            "targetCollection": "Property",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": false
+        }
+    ],
+    "PropertyRooms": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Listing",
+            "targetCollection": "Property",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": false
+        }
+    ],
+    "PropertyUnitTypes": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Listing",
+            "targetCollection": "Property",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": false
+        }
+    ],
+    "Rules": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "SavedSearch": [
+        {
+            "navProperty": "Member",
+            "targetCollection": "Member",
+            "sourceKey": "MemberKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "Showing": [
+        {
+            "navProperty": "AgentOriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "AgentOriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "AgentSourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "AgentSourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Listing",
+            "targetCollection": "Property",
+            "sourceKey": "ListingKey",
+            "targetKey": "ListingKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ListingOriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ListingOriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ListingSourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ListingSourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "ShowingAgent",
+            "targetCollection": "Member",
+            "sourceKey": "ShowingAgentKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ShowingOriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ShowingOriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "ShowingSourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "ShowingSourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        }
+    ],
+    "TeamMembers": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Member",
+            "targetCollection": "Member",
+            "sourceKey": "MemberKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        }
+    ],
+    "Teams": [
+        {
+            "navProperty": "HistoryTransactional",
+            "targetCollection": "HistoryTransactional",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "Media",
+            "targetCollection": "Media",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        },
+        {
+            "navProperty": "OriginatingSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "OriginatingSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "SourceSystem",
+            "targetCollection": "OUID",
+            "sourceKey": "SourceSystemID",
+            "targetKey": "OrganizationUniqueId",
+            "isCollection": false
+        },
+        {
+            "navProperty": "TeamLead",
+            "targetCollection": "Member",
+            "sourceKey": "TeamLeadKey",
+            "targetKey": "MemberKey",
+            "isCollection": false
+        },
+        {
+            "navProperty": "TeamsSocialMedia",
+            "targetCollection": "SocialMedia",
+            "sourceKey": "ResourceRecordKey,ResourceName",
+            "targetKey": null,
+            "isCollection": true
+        }
+    ]
+}

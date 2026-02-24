@@ -16,9 +16,20 @@
         <load-on-startup>1</load-on-startup>
     </servlet>
 
+    <servlet>
+        <servlet-name>HealthServlet</servlet-name>
+        <servlet-class>org.reso.service.servlet.HealthServlet</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+
     <servlet-mapping>
         <servlet-name>TokenServlet</servlet-name>
         <url-pattern>/token</url-pattern>
+    </servlet-mapping>
+
+    <servlet-mapping>
+        <servlet-name>HealthServlet</servlet-name>
+        <url-pattern>/health</url-pattern>
     </servlet-mapping>
 
     <servlet-mapping>

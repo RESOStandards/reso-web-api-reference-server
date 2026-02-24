@@ -1,0 +1,42 @@
+# Build outputs
+build/
+target/
+*.war
+*.jar
+
+# Gradle cache and wrapper cache
+.gradle/
+gradle/caches/
+
+# IDE files
+.idea/
+*.iml
+.vscode/
+.eclipse/
+
+# Version control
+.git/
+.gitignore
+
+# Documentation
+*.md
+LICENSE
+
+# Docker files 
+docker-compose*.yml
+Dockerfile
+
+# Environment files
+*.env
+.env*
+
+# Logs
+*.log
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Temporary files
+tmp/
+temp/

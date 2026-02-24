@@ -1,0 +1,36 @@
+version: "3.8"
+services:
+  builder:
+    build:
+      context: .
+      dockerfile: ./docker/docker-builder
+      args:
+        CERT_REPORT_FILENAME: ${CERT_REPORT_FILENAME:-RESODataDictionary-2.0.metadata-report.json}
+    volumes:
+      - .:/usr/src/app
+      - gradle_cache:/root/.gradle
+    working_dir: /usr/src/app
+    environment:
+      CERT_REPORT_FILENAME: ${CERT_REPORT_FILENAME:-RESODataDictionary-2.0.metadata-report.json}
+
+  # Service to build the main application after gradle build completes
+  app-builder:
+    image: docker:20.10-cli
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock
+      - .:/workspace
+    working_dir: /workspace
+    environment:
+      - CERT_REPORT_FILENAME=${CERT_REPORT_FILENAME:-RESODataDictionary-2.0.metadata-report.json}
+    command: >
+      sh -c "
+        echo '🏗️ Building main application container...' &&
+        docker-compose build odata-manager-app --no-cache &&
+        echo '✅ Application build complete!'
+      "
+    depends_on:
+      builder:
+        condition: service_completed_successfully
+
+volumes:
+  gradle_cache:
